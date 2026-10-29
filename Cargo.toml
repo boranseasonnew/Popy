@@ -1,7 +1,7 @@
 [package]
 name = "popy"
 default-run = "popy"
-version = "0.2.0-preview.1"
+version = "0.2.0-preview.2"
 edition = "2024"
 rust-version = "1.95"
 publish = false
@@ -14,8 +14,14 @@ serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 sha2 = "0.11"
 image = { version = "0.25", default-features = false, features = ["png"] }
-eframe = { version = "0.37", default-features = false, features = ["default_fonts", "glow", "x11", "wayland"] }
+eframe = { version = "0.37", default-features = false, features = ["default_fonts", "system_fonts", "glow", "x11", "wayland"] }
 rfd = "0.17"
+reqwest = { version = "0.13", default-features = false, features = ["blocking", "json", "native-tls"] }
+ed25519-dalek = "2.2"
+semver = "1"
+zip = { version = "9", default-features = false, features = ["deflate"] }
+getrandom = "0.4"
+unicode-bidi = "0.3"
 
 [[bin]]
 name = "popy"

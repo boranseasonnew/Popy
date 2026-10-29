@@ -10,6 +10,11 @@
 - [x] Streaming CFR/AAC hash scans, source-integrity and output checks.
 - [x] Supervised processes, timeouts, Windows Job Objects and exclusive output directories.
 - [x] Windows packaging script, first-run bootstrap and dependency notices.
+- [x] Soft light/dark workspace, animated fox/bear companions and reduced motion.
+- [x] English default plus 19 additional interface languages, including Arabic shaping and system-font fallback.
+- [x] Remappable keyboard shortcuts, selection/reordering and keyboard navigation.
+- [x] Explicit in-app signed update checks, verified downloads, replacement, rollback and restart.
+- [x] Native supervised first-run setup without a console window.
 
 ## Required before stable 1.0
 

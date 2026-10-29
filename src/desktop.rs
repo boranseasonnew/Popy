@@ -1,6 +1,6 @@
 #![cfg_attr(target_os = "windows", windows_subsystem = "windows")]
 
-use eframe::egui::{self, Color32, RichText, TextureHandle, Vec2};
+use eframe::egui::{self, TextureHandle};
 use popy::{
     export::Progress,
     process::ManagedChild,
@@ -18,11 +18,38 @@ use std::{
     time::{Duration, Instant, SystemTime, UNIX_EPOCH},
 };
 
-const ORANGE: Color32 = Color32::from_rgb(255, 156, 79);
-const MUTED: Color32 = Color32::from_rgb(157, 164, 177);
-const BACKGROUND: Color32 = Color32::from_rgb(22, 25, 31);
-const PANEL: Color32 = Color32::from_rgb(30, 34, 42);
 const LOGO: &[u8] = include_bytes!("../branding/popy-logo-v1.png");
+#[path = "desktop_view.rs"]
+mod view;
+
+#[derive(Clone, Serialize, Deserialize)]
+#[serde(default)]
+struct Preferences {
+    locale: String,
+    dark: bool,
+    reduced_motion: bool,
+    companion: u8,
+    ui_scale: f32,
+    preview_seconds: u32,
+    preview_updates: bool,
+    update_result_seen: String,
+    shortcuts: popy::shortcuts::Shortcuts,
+}
+impl Default for Preferences {
+    fn default() -> Self {
+        Self {
+            locale: "en".into(),
+            dark: false,
+            reduced_motion: false,
+            companion: 0,
+            ui_scale: 1.0,
+            preview_seconds: 3,
+            preview_updates: true,
+            update_result_seen: String::new(),
+            shortcuts: Default::default(),
+        }
+    }
+}
 
 #[derive(Clone, Serialize, Deserialize)]
 #[serde(default)]
@@ -50,6 +77,8 @@ struct Entry {
     output: PathBuf,
     settings: Settings,
     preview: bool,
+    #[serde(default = "default_preview_seconds")]
+    preview_seconds: u32,
     state: String,
     progress: Option<Progress>,
     error: String,
@@ -59,6 +88,10 @@ struct Entry {
 struct Session {
     settings: Settings,
     entries: Vec<Entry>,
+    preferences: Preferences,
+}
+fn default_preview_seconds() -> u32 {
+    3
 }
 struct Running {
     managed: ManagedChild,
@@ -73,8 +106,11 @@ struct Smoke {
     result: Arc<AtomicU8>,
     frames: u32,
     run_export: bool,
+    keyboard_test: bool,
+    setup_test: bool,
 }
 struct PopyApp {
+    studio: view::Studio,
     root: PathBuf,
     session: Session,
     selected: Option<usize>,
@@ -122,18 +158,6 @@ impl PopyApp {
         smoke_input: Option<PathBuf>,
         smoke_output: Option<PathBuf>,
     ) -> Self {
-        let mut style = (*cc.egui_ctx.style_of(egui::Theme::Dark)).clone();
-        style.visuals = egui::Visuals::dark();
-        style.visuals.panel_fill = BACKGROUND;
-        style.visuals.window_fill = PANEL;
-        style.visuals.selection.bg_fill = ORANGE.gamma_multiply(0.28);
-        style.visuals.selection.stroke.color = ORANGE;
-        style.visuals.widgets.active.bg_fill = ORANGE.gamma_multiply(0.45);
-        style.visuals.widgets.hovered.bg_fill = Color32::from_rgb(65, 55, 47);
-        style.spacing.item_spacing = Vec2::new(10.0, 10.0);
-        style.spacing.button_padding = Vec2::new(14.0, 10.0);
-        cc.egui_ctx.set_theme(egui::Theme::Dark);
-        cc.egui_ctx.set_style_of(egui::Theme::Dark, style);
         let mut session = if smoke.is_some() {
             Session::default()
         } else {
@@ -147,6 +171,11 @@ impl PopyApp {
         }
         session.settings.gpu = session.settings.gpu.min(15);
         session.settings.tile = session.settings.tile.clamp(32, 256);
+        session.preferences.ui_scale = session.preferences.ui_scale.clamp(0.85, 1.2);
+        session.preferences.preview_seconds = session.preferences.preview_seconds.clamp(1, 10);
+        session.preferences.companion = session.preferences.companion.min(2);
+        session.preferences.shortcuts.fill_missing_defaults();
+        cc.egui_ctx.set_zoom_factor(session.preferences.ui_scale);
         for entry in &mut session.entries {
             if entry.state == "running" || entry.state == "queued" {
                 entry.state = "interrupted".into();
@@ -160,6 +189,7 @@ impl PopyApp {
             .map(|e| format!("{e:#}"))
             .unwrap_or_default();
         let mut app = Self {
+            studio: view::Studio::new(&cc.egui_ctx),
             root,
             session,
             selected: None,
@@ -189,6 +219,7 @@ impl PopyApp {
         } else {
             app.selected = app.session.entries.len().checked_sub(1);
         }
+        app.restore_update_result();
         app
     }
     fn save_session(&self) {
@@ -211,6 +242,7 @@ impl PopyApp {
                 output: PathBuf::new(),
                 settings: self.session.settings.clone(),
                 preview: false,
+                preview_seconds: self.session.preferences.preview_seconds,
                 state: "ready".into(),
                 progress: None,
                 error: String::new(),
@@ -224,6 +256,7 @@ impl PopyApp {
             if let Some(selected) = self.selected {
                 let mut entry = self.session.entries[selected].clone();
                 entry.preview = true;
+                entry.preview_seconds = self.session.preferences.preview_seconds;
                 entry.settings = self.session.settings.clone();
                 entry.state = "queued".into();
                 entry.progress = None;
@@ -293,10 +326,14 @@ impl PopyApp {
             command.arg("--auto-color");
         }
         if entry.preview {
-            command.args([
-                "--preview-seconds",
-                if self.smoke.is_some() { "1" } else { "3" },
-            ]);
+            command.arg("--preview-seconds").arg(
+                if self.smoke.is_some() {
+                    1
+                } else {
+                    entry.preview_seconds
+                }
+                .to_string(),
+            );
         }
         let managed = ManagedChild::spawn(&mut command)?;
         entry.state = "running".into();
@@ -314,8 +351,8 @@ impl PopyApp {
         self.queue_enabled = false;
         if let Some(active) = &self.active {
             match fs::write(&active.cancel, b"cancel") {
-                Ok(()) => self.message = "İptal ediliyor; günlükler korunacak.".into(),
-                Err(e) => self.message = format!("İptal dosyası yazılamadı: {e}"),
+                Ok(()) => self.message = "Stopping the queue; diagnostic logs will be kept.".into(),
+                Err(e) => self.message = format!("Could not request cancellation: {e}"),
             }
         }
     }
@@ -398,363 +435,6 @@ impl PopyApp {
             self.comparison_path = image_path;
         }
     }
-    fn sidebar(&mut self, ui: &mut egui::Ui) {
-        ui.add_space(18.0);
-        ui.horizontal(|ui| {
-            if let Some(logo) = &self.logo {
-                ui.image((logo.id(), Vec2::splat(62.0)));
-            }
-            ui.vertical(|ui| {
-                ui.label(RichText::new("popy").size(32.0).strong());
-                ui.label(
-                    RichText::new("Videona biraz hayat kat.")
-                        .color(MUTED)
-                        .size(12.0),
-                );
-            });
-        });
-        ui.add_space(28.0);
-        ui.label(
-            RichText::new("İYİLEŞTİRME")
-                .color(MUTED)
-                .size(11.0)
-                .strong(),
-        );
-        ui.add_space(4.0);
-        ui.label("İçerik türü");
-        egui::ComboBox::from_id_salt("model")
-            .width(226.0)
-            .selected_text(if self.session.settings.model == Model::General {
-                "Gerçek çekim · Genel"
-            } else {
-                "Anime / çizim · Hızlı"
-            })
-            .show_ui(ui, |ui| {
-                ui.selectable_value(
-                    &mut self.session.settings.model,
-                    Model::General,
-                    "Gerçek çekim · Genel",
-                );
-                ui.selectable_value(
-                    &mut self.session.settings.model,
-                    Model::Anime,
-                    "Anime / çizim · Hızlı",
-                );
-            });
-        ui.label(
-            RichText::new(if self.session.settings.model == Model::General {
-                "Genel model daha ağırdır. iGPU'da önce 3 saniyelik önizleme dene."
-            } else {
-                "Anime modeli gerçek çekimde ayrıntıları değiştirebilir."
-            })
-            .color(MUTED)
-            .size(12.0),
-        );
-        ui.add_space(12.0);
-        ui.horizontal(|ui| {
-            ui.label(RichText::new("2×").color(ORANGE).size(24.0).strong());
-            ui.label("Çözünürlük artışı");
-        });
-        ui.add_space(12.0);
-        ui.checkbox(&mut self.session.settings.auto_color, "Otomatik renk");
-        ui.label(
-            RichText::new("Ton, kontrast ve hafif doygunluk. Siyah beyaza yeni renk eklemez.")
-                .color(MUTED)
-                .size(12.0),
-        );
-        ui.add_space(16.0);
-        ui.collapsing("Ekran kartı ve bellek", |ui| {
-            ui.horizontal(|ui| { ui.label("GPU indeksi"); ui.add(egui::DragValue::new(&mut self.session.settings.gpu).range(0..=15)); });
-            ui.horizontal(|ui| { ui.label("Tile"); ui.add(egui::DragValue::new(&mut self.session.settings.tile).range(32..=256).speed(8)); });
-            ui.label(RichText::new("Vulkan sürücüsü gerekir. Varsayılan GPU 0. Bellek hatasında tile değerini düşür. Cihaz listesi işin ai günlüğünde.").size(11.0).color(MUTED));
-        });
-        ui.add_space(14.0);
-        ui.separator();
-        ui.add_space(8.0);
-        ui.label("Kayıt klasörü");
-        let folder = &self.session.settings.output;
-        let short = format!(
-            "… / {} / {}",
-            folder.parent().map(filename).unwrap_or_default(),
-            filename(folder)
-        );
-        ui.label(RichText::new(short).size(11.0).color(MUTED))
-            .on_hover_text(folder.display().to_string());
-        if ui.button("Klasörü değiştir").clicked()
-            && let Some(path) = rfd::FileDialog::new()
-                .set_title("Popy çıktı klasörü")
-                .pick_folder()
-        {
-            self.session.settings.output = path;
-            self.save_session();
-        }
-        ui.add_space(20.0);
-        ui.label(
-            RichText::new("Her şey bilgisayarında işlenir.")
-                .size(12.0)
-                .color(MUTED),
-        );
-        ui.label(
-            RichText::new(format!("v{} · Ön sürüm", env!("CARGO_PKG_VERSION")))
-                .color(ORANGE)
-                .size(11.0),
-        );
-        ui.hyperlink_to("Kaynak kodu", "https://github.com/boranseasonnew/Popy");
-    }
-    fn preview(&mut self, ui: &mut egui::Ui) {
-        let available = Vec2::new(ui.available_width(), 300.0);
-        egui::Frame::new()
-            .fill(PANEL)
-            .corner_radius(12.0)
-            .inner_margin(18.0)
-            .show(ui, |ui| {
-                ui.set_min_size(available - Vec2::splat(36.0));
-                if let Some(texture) = &self.comparison {
-                    ui.horizontal(|ui| {
-                        ui.label(RichText::new("Kaynak").color(MUTED));
-                        ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
-                            ui.label(RichText::new("Popy · 2×").color(ORANGE));
-                        });
-                    });
-                    let [width, height] = texture.size();
-                    let ratio = (width as f32 / 2.0) / height as f32;
-                    let w = ui.available_width().min(236.0 * ratio);
-                    let rect = ui
-                        .vertical_centered(|ui| {
-                            ui.allocate_exact_size(Vec2::new(w, w / ratio), egui::Sense::hover())
-                                .0
-                        })
-                        .inner;
-                    ui.painter().image(
-                        texture.id(),
-                        rect,
-                        egui::Rect::from_min_max(egui::pos2(0.5, 0.0), egui::pos2(1.0, 1.0)),
-                        Color32::WHITE,
-                    );
-                    let x = rect.left() + rect.width() * self.split;
-                    let left = egui::Rect::from_min_max(rect.min, egui::pos2(x, rect.bottom()));
-                    ui.painter().with_clip_rect(left).image(
-                        texture.id(),
-                        rect,
-                        egui::Rect::from_min_max(egui::pos2(0.0, 0.0), egui::pos2(0.5, 1.0)),
-                        Color32::WHITE,
-                    );
-                    ui.painter().line_segment(
-                        [egui::pos2(x, rect.top()), egui::pos2(x, rect.bottom())],
-                        egui::Stroke::new(2.0, ORANGE),
-                    );
-                    ui.vertical_centered(|ui| {
-                        ui.spacing_mut().slider_width = (w - 110.0).max(100.0);
-                        ui.add(
-                            egui::Slider::new(&mut self.split, 0.0..=1.0)
-                                .show_value(false)
-                                .text("Önce / sonra"),
-                        );
-                    });
-                    ui.label(
-                        RichText::new(
-                            "İlk kare karşılaştırması · Hareketli sonucu videoyu açarak incele.",
-                        )
-                        .size(11.0)
-                        .color(MUTED),
-                    );
-                } else {
-                    ui.vertical_centered(|ui| {
-                        ui.add_space(38.0);
-                        if let Some(logo) = &self.logo {
-                            ui.image((logo.id(), Vec2::splat(92.0)));
-                        }
-                        ui.label(
-                            RichText::new("Küçük bir dokunuş, daha net bir video.").size(18.0),
-                        );
-                        ui.label(
-                            RichText::new("Video ekle, ayarını seç ve kısa bir önizleme oluştur.")
-                                .color(MUTED),
-                        );
-                        ui.add_space(12.0);
-                        ui.label(
-                            RichText::new("Videoları bu pencereye de sürükleyebilirsin.")
-                                .color(MUTED)
-                                .size(12.0),
-                        );
-                    });
-                }
-            });
-    }
-    fn queue(&mut self, ui: &mut egui::Ui) {
-        ui.horizontal(|ui| {
-            ui.label(RichText::new("İş kuyruğu").size(17.0).strong());
-            ui.label(RichText::new(format!("{} iş", self.session.entries.len())).color(MUTED));
-        });
-        egui::ScrollArea::vertical()
-            .id_salt("queue")
-            .max_height(155.0)
-            .show(ui, |ui| {
-                if self.session.entries.is_empty() {
-                    ui.label(RichText::new("Henüz video eklenmedi.").color(MUTED));
-                }
-                for (i, entry) in self.session.entries.iter().enumerate() {
-                    let status = match entry.state.as_str() {
-                        "ready" => "Hazır",
-                        "queued" => "Sırada",
-                        "running" => "İşleniyor",
-                        "completed" => "Tamamlandı",
-                        "cancelled" => "İptal",
-                        "interrupted" => "Yarıda kaldı",
-                        _ => "Hata",
-                    };
-                    let text = format!(
-                        "{}{}   ·   {}",
-                        filename(&entry.input),
-                        if entry.preview { "  [önizleme]" } else { "" },
-                        status
-                    );
-                    if ui
-                        .add(
-                            egui::Button::new(text)
-                                .selected(self.selected == Some(i))
-                                .min_size(Vec2::new(ui.available_width(), 34.0)),
-                        )
-                        .clicked()
-                    {
-                        self.selected = Some(i);
-                    }
-                }
-            });
-    }
-}
-
-impl eframe::App for PopyApp {
-    fn ui(&mut self, ui: &mut egui::Ui, _frame: &mut eframe::Frame) {
-        let ctx = ui.ctx().clone();
-        self.poll(&ctx);
-        ctx.request_repaint_after(Duration::from_millis(200));
-        let dropped: Vec<_> = ctx.input(|i| {
-            i.raw
-                .dropped_files
-                .iter()
-                .map(|f| f.path().to_owned())
-                .collect()
-        });
-        if !dropped.is_empty() {
-            self.add_files(dropped);
-        }
-        if ctx.input(|i| i.viewport().close_requested()) && self.active.is_some() {
-            ctx.send_viewport_cmd(egui::ViewportCommand::CancelClose);
-            self.confirm_close = true;
-        }
-        egui::Panel::left("settings")
-            .resizable(false)
-            .exact_size(280.0)
-            .frame(egui::Frame::new().fill(PANEL).inner_margin(20.0))
-            .show(ui, |ui| {
-                egui::ScrollArea::vertical().show(ui, |ui| self.sidebar(ui));
-            });
-        egui::CentralPanel::default().frame(egui::Frame::new().fill(BACKGROUND).inner_margin(26.0)).show(ui, |ui| {
-            egui::ScrollArea::vertical().id_salt("main").show(ui, |ui| {
-            ui.horizontal(|ui| {
-                ui.vertical(|ui| { ui.label(RichText::new("Biraz daha net.").size(27.0).strong()); ui.label(RichText::new("Yerel, açık kaynak video iyileştirme.").color(MUTED)); });
-                ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
-                    if ui.button("+  Video ekle").clicked()
-                        && let Some(paths) = rfd::FileDialog::new().set_title("Video seç").add_filter("Video", &["mp4","mkv","mov"]).pick_files() { self.add_files(paths); }
-                });
-            });
-            ui.add_space(18.0);
-            if !self.runtime_ready {
-                ui.colored_label(ORANGE,"İşleme araçları hazır değil.");
-                ui.label("Paketteki Araclari Kur.cmd dosyasını çalıştırıp Popy'yi yeniden aç.");
-            }
-            self.preview(ui);
-            ui.add_space(12.0);
-            ui.horizontal(|ui| {
-                if ui.add_enabled(self.runtime_ready && self.selected.is_some(), egui::Button::new("3 sn önizleme")).clicked() { self.schedule(true); }
-                let ready = self.session.entries.iter().any(|e| e.state == "ready" || e.state == "queued");
-                if ui.add_enabled(self.runtime_ready && ready, egui::Button::new(RichText::new("Kuyruğu işle").color(Color32::BLACK)).fill(ORANGE)).clicked() { self.schedule(false); }
-                if ui.add_enabled(self.active.is_some() || self.queue_enabled, egui::Button::new("Durdur")).clicked() { self.cancel(); }
-            });
-            if let Some(active) = &self.active {
-                let entry = &self.session.entries[active.index];
-                let progress = entry.progress.as_ref();
-                let fraction = progress.map(|p| if p.total_frames > 0 { p.completed_frames as f32 / p.total_frames as f32 * 0.92 } else { 0.0 }).unwrap_or(0.0);
-                ui.add(egui::ProgressBar::new(fraction).fill(ORANGE).text(progress.map(|p| p.message.as_str()).unwrap_or("Başlatılıyor…")));
-                ui.label(RichText::new(format!("{} · {:.0} sn", filename(&entry.input), active.start.elapsed().as_secs_f64())).color(MUTED).size(11.0));
-            }
-            if !self.message.is_empty() { ui.colored_label(ORANGE, &self.message); }
-            ui.add_space(8.0);
-            self.queue(ui);
-            if let Some(selected) = self.selected {
-                let entry = self.session.entries[selected].clone();
-                if !entry.error.is_empty() { egui::ScrollArea::vertical().max_height(65.0).show(ui, |ui| { ui.colored_label(Color32::LIGHT_RED,&entry.error); }); }
-                ui.horizontal(|ui| {
-                    if entry.state == "completed" && ui.button("Videoyu aç").clicked() { open_path(&entry.output.join("enhanced.mp4")); }
-                    if entry.output.is_dir() && ui.button("Sonuç klasörü").clicked() { open_path(&entry.output); }
-                    if matches!(entry.state.as_str(),"failed"|"cancelled"|"interrupted") && ui.button("Tekrar dene").clicked() {
-                        let mut retry = entry.clone(); retry.state = "queued".into(); retry.progress = None; retry.error.clear(); retry.output = PathBuf::new(); retry.settings = self.session.settings.clone();
-                        self.session.entries.push(retry); self.selected = Some(self.session.entries.len()-1); self.queue_enabled = true; self.save_session();
-                    }
-                    if self.active.is_none() && ui.button("Tamamlananları listeden kaldır").clicked() {
-                        self.session.entries.retain(|e| !matches!(e.state.as_str(),"completed"|"cancelled"|"failed"|"interrupted")); self.selected = None; self.save_session();
-                    }
-                });
-            }
-            ui.add_space(8.0);
-            ui.label(RichText::new("Destek: H.264 / AAC · sabit FPS · BT.709 SDR. HDR, değişken FPS ve rotasyon henüz desteklenmiyor.").size(11.0).color(MUTED));
-            });
-        });
-        if self.confirm_close {
-            egui::Window::new("İş devam ediyor")
-                .collapsible(false)
-                .resizable(false)
-                .anchor(egui::Align2::CENTER_CENTER, Vec2::ZERO)
-                .show(&ctx, |ui| {
-                    ui.label("Popy kapanırsa çalışan iş durdurulacak. Günlükler korunur.");
-                    ui.horizontal(|ui| {
-                        if ui.button("Çalışmaya devam et").clicked() {
-                            self.confirm_close = false;
-                        }
-                        if ui.button("İşi durdur ve çık").clicked() {
-                            self.cancel();
-                            self.active.take();
-                            self.confirm_close = false;
-                            ctx.send_viewport_cmd(egui::ViewportCommand::Close);
-                        }
-                    });
-                });
-        }
-        if let Some(smoke) = &mut self.smoke {
-            smoke.frames += 1;
-            let finished = !smoke.run_export
-                || (!self.queue_enabled
-                    && self.active.is_none()
-                    && !self.session.entries.is_empty());
-            if finished && smoke.frames > 8 && !smoke.requested {
-                smoke.requested = true;
-                let path = smoke.screenshot.clone();
-                let result = Arc::clone(&smoke.result);
-                let success = !smoke.run_export
-                    || self.session.entries.iter().all(|e| e.state == "completed");
-                ctx.request_screenshot(move |image| {
-                    let saved = image::save_buffer(
-                        &path,
-                        image.as_raw(),
-                        image.width() as u32,
-                        image.height() as u32,
-                        image::ColorType::Rgba8,
-                    )
-                    .is_ok();
-                    result.store(if success && saved { 1 } else { 2 }, Ordering::SeqCst);
-                });
-            }
-            if smoke.result.load(Ordering::SeqCst) != 0 {
-                ctx.send_viewport_cmd(egui::ViewportCommand::Close);
-            }
-        }
-    }
-    fn on_exit(&mut self, _gl: Option<&eframe::glow::Context>) {
-        self.cancel();
-        self.active.take();
-        self.save_session();
-    }
 }
 
 fn open_path(path: &Path) {
@@ -815,6 +495,8 @@ fn main() -> eframe::Result {
         result: Arc::clone(&result),
         frames: 0,
         run_export: smoke_input.is_some(),
+        keyboard_test: args.iter().any(|s| s == "--smoke-keys"),
+        setup_test: args.iter().any(|s| s == "--smoke-setup"),
     });
     let is_smoke = smoke.is_some();
     let root = Tools::root().unwrap_or_else(|_| PathBuf::from("."));
@@ -829,12 +511,20 @@ fn main() -> eframe::Result {
         }
     });
     let mut viewport = egui::ViewportBuilder::default()
-        .with_inner_size([1220.0, 850.0])
-        .with_min_inner_size([1000.0, 760.0]);
+        .with_inner_size([1360.0, 900.0])
+        .with_min_inner_size([1100.0, 760.0])
+        .with_decorations(false)
+        .with_transparent(true);
     if let Some(icon) = icon {
         viewport = viewport.with_icon(icon);
     }
     let output = value("--smoke-output");
+    let locale = value("--smoke-locale").map(|p| p.to_string_lossy().into_owned());
+    let dark = args.iter().any(|s| s == "--smoke-dark");
+    let bear = args.iter().any(|s| s == "--smoke-bear");
+    let settings = args.iter().any(|s| s == "--smoke-settings");
+    let update_test = value("--smoke-update-result");
+    let setup_test = args.iter().any(|s| s == "--smoke-setup");
     eframe::run_native(
         "Popy",
         eframe::NativeOptions {
@@ -842,7 +532,26 @@ fn main() -> eframe::Result {
             renderer: eframe::Renderer::Glow,
             ..Default::default()
         },
-        Box::new(move |cc| Ok(Box::new(PopyApp::new(cc, root, smoke, smoke_input, output)))),
+        Box::new(move |cc| {
+            let mut app = PopyApp::new(cc, root, smoke, smoke_input, output);
+            if let Some(locale) = locale {
+                app.session.preferences.locale = locale;
+            }
+            if dark {
+                app.session.preferences.dark = true;
+            }
+            if bear {
+                app.session.preferences.companion = 1;
+            }
+            if settings {
+                app.studio.settings_open = true;
+            }
+            app.studio.update_test = update_test;
+            if setup_test {
+                app.start_setup();
+            }
+            Ok(Box::new(app))
+        }),
     )?;
     if is_smoke && result.load(Ordering::SeqCst) != 1 {
         std::process::exit(1);

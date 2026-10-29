@@ -1,6 +1,9 @@
 pub mod export;
+pub mod i18n;
 pub mod media;
 pub mod pipeline;
 pub mod process;
+pub mod shortcuts;
 pub mod suite;
 pub mod tools;
+pub mod updater;

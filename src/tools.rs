@@ -18,11 +18,20 @@ pub struct Tools {
 impl Tools {
     pub fn root() -> Result<PathBuf> {
         let current = std::env::current_dir()?;
+        let executable = std::env::current_exe()?;
+        // An extracted portable package owns its state even before first-run
+        // setup, and even when launched from a different working directory.
+        if let Some(directory) = executable.parent()
+            && (directory.join("Setup Tools.cmd").is_file()
+                || directory.join("Araclari Kur.cmd").is_file()
+                || directory.join(".tools/runtime.json").is_file())
+        {
+            return Ok(directory.to_owned());
+        }
         if std::env::var_os("POPY_TOOLS").is_some() || current.join(".tools/runtime.json").is_file()
         {
             return Ok(current);
         }
-        let executable = std::env::current_exe()?;
         for parent in executable.ancestors().skip(1).take(3) {
             if parent.join(".tools/runtime.json").is_file() {
                 return Ok(parent.to_owned());
@@ -35,11 +44,18 @@ impl Tools {
             .map(PathBuf::from)
             .unwrap_or_else(|| root.join(".tools/runtime.json"));
         let mut tools: Self = serde_json::from_reader(File::open(&config).with_context(|| {
+            // The interrupted-setup marker is checked before executing tools.
             format!(
                 "Araç ayarı yok: {}. scripts/bootstrap.ps1 çalıştırın.",
                 config.display()
             )
         })?)?;
+        if config
+            .parent()
+            .is_some_and(|parent| parent.join("setup-incomplete").is_file())
+        {
+            bail!("Processing tool setup is incomplete. Run Setup Tools again.");
+        }
         // Portable packages store paths relative to the config directory.
         let base = config.parent().unwrap_or(root);
         for path in [
@@ -141,5 +157,45 @@ impl Model {
             hashes.insert(name.clone(), sha256(&tools.models.join(name))?.into());
         }
         Ok(hashes.into())
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    #[test]
+    fn interrupted_setup_is_not_treated_as_a_ready_runtime() {
+        let stamp = std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .unwrap()
+            .as_nanos();
+        let root = std::env::current_dir()
+            .unwrap()
+            .join(format!("target/tool-config-test/{stamp}"));
+        std::fs::create_dir_all(root.join(".tools/models")).unwrap();
+        std::fs::write(
+            root.join(".tools/tool.exe"),
+            b"test placeholder, never executed",
+        )
+        .unwrap();
+        let tools = Tools {
+            ffmpeg: "tool.exe".into(),
+            ffprobe: "tool.exe".into(),
+            ncnn: "tool.exe".into(),
+            models: "models".into(),
+        };
+        serde_json::to_writer(
+            File::create(root.join(".tools/runtime.json")).unwrap(),
+            &tools,
+        )
+        .unwrap();
+        assert!(Tools::load(&root).is_ok());
+        std::fs::write(root.join(".tools/setup-incomplete"), b"in progress").unwrap();
+        assert!(
+            Tools::load(&root)
+                .unwrap_err()
+                .to_string()
+                .contains("incomplete")
+        );
     }
 }

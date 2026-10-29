@@ -25,3 +25,9 @@ Masaüstü EXE'si Rust bağımlılıklarını ve egui'nin varsayılan fontların
 Bazı crate arşivlerinde bulunmayan kök lisans metinleri resmî upstream commitlerinden `third_party/licenses/` altına tamamlandı. Kaynak URL'leri ve SHA-256 değerleri `SOURCES.json` içinde, pakette de korunur. egui ailesinin erişilemeyen crate VCS kaydı için resmî 0.37.0 etiketinin commit'i kullanıldı; eframe için erişilebilen kendi VCS commit'i kullanıldı. Metinler değiştirilmedi. Lisans dosyası adı eşleştirmesi Türkçe sistemlerde `I/i` farkından etkilenmemesi için invariant büyük harf kullanır.
 
 Kendi sentetik testleri FFmpeg `testsrc2` ve `sine` kaynaklarından üretildi; indirilen demo/anime videosu kalite raporunda kullanılmadı.
+
+20 dil için işletim sisteminin fontlarından yararlanılır; Windows font dosyaları pakete kopyalanmaz. HTTP/TLS için reqwest ve Windows native TLS, güncelleme imzası için ed25519-dalek, sürüm sırası için semver ve paket çıkarımı için zip kullanılır. Kilitli sürümler ve kendi lisansları paket envanterinde bulunur.
+
+Tilki/ayı eşlikçi görsellerinin üretim kaydı ve tam istemleri [ASSETS.md](../branding/companions/ASSETS.md) içindedir. README'nin üstündeki mevcut Popy logosu korunur.
+
+Windows Setup EXE'si [Inno Setup](https://jrsoftware.org/) 6.7.4 ile oluşturulur. Derleyici resmî `jrsoftware/issrc` sürümünden alınır; SHA-256 `a549929319f9120716677c685535ca4671e4b937b5fdc87e2585f32d8eb30e8c` ve indirilen kurucunun Pyrsys B.V. Authenticode imzası bu makinede doğrulandı. Inno Setup telif/lisans metni pakette `licenses/inno-setup/` altında korunur.

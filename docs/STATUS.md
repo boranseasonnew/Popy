@@ -1,10 +1,14 @@
 # Popy — geliştirme durumu
 
-30 Ekim 2026 · **0.2.0-preview.1**. Native Rust masaüstü ve tam klip batch dışa aktarma eklendi. Kararlı 1.0 kalite/donanım kapıları henüz geçilmedi.
+30 Ekim 2026 · **0.2.0-preview.2**. Yeni masaüstü tasarımı, 20 dil, özelleştirilebilir kısayollar ve imzalı uygulama içi güncelleme. Kararlı 1.0 kalite/donanım kapıları henüz geçilmedi.
 
 ## Çalışan özellikler
 
-- Türkçe masaüstü: dosya seçme/sürükleme, model ve otomatik renk ayarı, GPU/tile, kayıt klasörü.
+- İngilizce varsayılan, 20 dilli masaüstü: dosya seçme/sürükleme, model ve otomatik renk ayarı, GPU/tile, kayıt klasörü.
+- Açık/koyu yumuşak arayüz; animasyonlu tilki/ayı, gizleme ve azaltılmış hareket; arayüz boyutu ayarı.
+- 29 özelleştirilebilir kısayol, klavyeyle iş seçme/sıralama, yakınlaştırma ve önce/sonra kontrolü.
+- Kullanıcı isteğiyle GitHub sürüm kontrolü; Ed25519 imzalı manifest, paket hash/dosya kontrolü, uygulama içi indirme, kurma, geri alma ve yeniden açma.
+- Gizli ve denetimli ilk araç kurulumu; göreli araç yolları ve yarıda kalan kurulumu onarma.
 - Sıralı kuyruk, ilerleme, iptal, hatalı/yarıda kalan işi tekrar deneme ve oturum kaydı. Retry sıfırdan başlar.
 - Kısa önizleme; ilk kare önce/sonra kaydırıcısı; sonucu sistem video oynatıcısında açma.
 - Real-ESRGAN genel model: yerel 4× → 2× çıktı. Animevideo: yerel 2×.
@@ -22,13 +26,16 @@
 
 Makine: AMD Radeon(TM) Graphics iGPU, sürücü 31.0.21925.1001, yaklaşık 16 GB sistem RAM'i. Ayrılmış adapter RAM bildirimi toplam iGPU belleği olarak yorumlanmadı. VRAM ölçülmedi.
 
-- 15 otomatik test geçti. İki `ignored` test, başka testler tarafından ayrı süreçte çağrılan bekleme/torun süreç yardımcılarıdır.
+- 24 otomatik test geçti. İki `ignored` test, başka testler tarafından ayrı süreçte çağrılan bekleme/torun süreç yardımcılarıdır.
 - Format, tüm hedeflerde Clippy (`-D warnings`) ve Windows release derleme geçti.
 - Süre sınırında doğrudan alt sürecin sonlandığı ve Job Object kapanınca torun sürecin de öldüğü test edildi.
 - `scripts/export-smoke.ps1 -WithDesktop`: 33 saniye, 128×72, 12 FPS, 396 kare kaynak → 256×144; 17 grup. Kareler, süre, FPS, AAC paketleri ve kaynak hash'i doğrulandı. Başarılı işin `work/` klasörü temizlendi. Mevcut çıktı reddedildi.
 - 30000/1001 FPS, 90 kare, sessiz kaynakta çok gruplu dışa aktarma geçti; kesirli FPS ve sessizlik korundu.
 - Gerçek çıkarım aşamasında iptal testi: nonzero çıkış, `cancelled` durumu, son video üretilmemesi; ardından yeni GPU işi çalıştı.
 - Masaüstü kendi CLI işleyicisini başlatıp otomatik renkli önizleme üretti, sonucu yükledi ve gerçek framebuffer ekran görüntüsü kaydetti. Görüntü elle incelendi.
+- Yeni arayüzün 20 dilinde framebuffer kontrolleri yapıldı. İngilizce, Türkçe, Hintçe ve Arapça örnekleri görsel olarak incelendi; Arapça birleşme/sıralama kontrol edildi. Tüm çeviri anahtarları 20 dilde doluluk testinden geçer; ana dil konuşuru çeviri incelemesi henüz yapılmadı.
+- Gerçek klavye olaylarıyla tema, eşlikçi, model, renk, ayarlar, yardım ve önce/sonra seçimi doğrulandı.
+- Güncelleme yardımcısının başarı, geri alma, kullanıcı verisi koruma ve yol kaçışı reddi senaryoları izole klasörlerde geçti. İmza değişikliği, sürüm düşürme ve başka kaynak reddi birim testleri geçti.
 - `scripts/smoke.ps1 -WithGpu`: yeni 10 saniyelik fixture üretimi, VFR/HDR reddi, GPU + renk, Unicode/boşluk/noktalı virgüllü yol, AAC kontrolü, kaynak koruma ve mevcut çıktı reddi geçti.
 
 Son 33 saniyelik entegrasyon işi yaklaşık 57.78 sn sürdü. Bu, izole/tekrarlı hız benchmark'ı değildir; diğer derleme/denetim işleri süreyi etkilemiş olabilir. 128×72 sentetik kaynak, doğal video kalite kanıtı değildir. Seçilmiş kayıtlar [2026-10-30-export.json](measurements/2026-10-30-export.json) içinde. Önceki 144p/360p kısa benchmark'lar [2026-10-29.json](measurements/2026-10-29.json) içinde; farklı motorların süreleri doğrudan eşdeğer değildir.
@@ -52,4 +59,4 @@ Genel model iGPU'da pahalıdır. ncnn modeli her grupta yeniden yüklenir. PNG'l
 5. Yaygın etiketsiz SDR dosyaları, kodekler, VFR ve ses ofsetleri için açık ve zamanlamayı koruyan içe aktarma.
 6. Bağımsız temiz Windows makinesinde kurulum ve sürücü/runtime testi; imzalama kararı.
 
-Bu yüzden sürüm ön sürüm olarak dağıtılır. Tam çevrimdışı runtime/model paketi, HDR, RIFE/FPS artırma ve AI siyah beyaz renklendirme henüz yoktur. [Yol haritası](ROADMAP.md), [kurulum rehberi](QUICKSTART.tr.md), [sürüm notları](RELEASE-0.2.0-preview.1.md).
+Bu yüzden sürüm ön sürüm olarak dağıtılır. Tam çevrimdışı runtime/model paketi, HDR, RIFE/FPS artırma ve AI siyah beyaz renklendirme henüz yoktur. [Yol haritası](ROADMAP.md), [kurulum rehberi](QUICKSTART.tr.md), [sürüm notları](RELEASE-0.2.0-preview.2.md).

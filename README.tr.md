@@ -1,42 +1,95 @@
-<p align="center"><img src="branding/popy-logo-v1.png" alt="Popy" width="180"></p>
+<p align="center">
+  <img src="branding/popy-logo-v1.png" alt="Popy, turuncu kızıl panda" width="180">
+</p>
 
 # Popy
 
-Rust ile geliştirilen, bilgisayarında çalışan açık kaynak video iyileştirme uygulaması.
+**Biraz daha net. Biraz daha senin.**
+
+Popy, bilgisayarında çalışan açık kaynak bir video iyileştirme uygulamasıdır. Videonu büyüt, rengini ayarla, sonucu karşılaştır ve kuyruğunu sade bir çalışma alanından yönet. Bir tilki ya da ayı sana eşlik etsin; fareyi, klavyeyi ve arayüzü istediğin gibi kullan.
+
+[Windows için indir](https://github.com/boranseasonnew/Popy/releases/tag/v0.2.0-preview.2) · [English](README.md) · [Kullanım rehberi](docs/QUICKSTART.tr.md)
 
 [![Rust checks](https://github.com/boranseasonnew/Popy/actions/workflows/check.yml/badge.svg)](https://github.com/boranseasonnew/Popy/actions/workflows/check.yml)
 
-**0.2 ön sürüm:** Masaüstü arayüzü, sıralı kuyruk, 2× AI upscale, açılıp kapanan otomatik renk düzeltme, kısa önizleme ve tam klip dışa aktarma var. Algısal kalite ve geniş donanım uyumluluğu henüz doğrulanmadı; kararlı 1.0 değildir.
+![Popy masaüstü uygulaması](docs/screenshots/popy-desktop.png)
 
-[Windows ZIP indir](https://github.com/boranseasonnew/Popy/releases) · [Kurulum ve kullanım](docs/QUICKSTART.tr.md) · [Durum](docs/STATUS.md) · [Yol haritası](docs/ROADMAP.md) · [English](README.md)
+<details>
+<summary>Ayı eşlikçiyle koyu tema</summary>
 
-ZIP'i tamamen çıkar, ilk kullanımda `Araclari Kur.cmd` dosyasını çalıştır, ardından `popy-desktop.exe` dosyasını aç. Rust ve Visual Studio gerekmez. Kurulum araçları ve modelleri GitHub'dan indirip SHA-256 ile kontrol eder. İşleme sırasında videolar dış servise gönderilmez.
+![Popy koyu tema](docs/screenshots/popy-desktop-dark.png)
 
-Video ekle; gerçek çekim için Genel, çizim için Anime modelini seç. İstersen otomatik rengi açıp önce üç saniyelik önizleme al. İlk karede önce/sonra kaydırıcısını kullan; hareketli sonucu videoyu açarak incele. Hazır videoları `Kuyruğu işle` ile sırayla dışa aktar. Her iş yeni klasöre video, karşılaştırma, rapor ve günlük yazar. Kaynak ve mevcut sonuçların üzerine yazılmaz.
+</details>
 
-Otomatik renk ton/kontrast/doygunluk ayarıdır. Siyah beyaz görüntüye AI ile yeni renk eklemez. Modeller Popy tarafından eğitilmedi; kaynak ve modele göre sonuç değişir. Genel model iGPU'da yavaştır.
+## Neden Popy?
 
-Girdi: H.264, sabit FPS, progressive 8-bit yuv420p, açık BT.709 limited SDR etiketi, kare piksel ve sıfıra yakın başlangıç; en fazla bir AAC akışı. HDR, VFR, döndürme ve diğer kodekler henüz desteklenmez. Çıktı 2×; genel model en fazla 960×540, anime modeli 1920×1080 girdi kabul eder.
+Popy, Adobe ekosistemi dahil ücretli ve kapalı yaratıcı yazılımların maliyetlerinden ve sınırlarından duyduğumuz rahatsızlıkla başladı. Kullanan kişinin cihazını, gizliliğini ve tercihlerini merkeze alan bir araç istedik.
 
-Yeni motor küçük PNG gruplarıyla çalışır, grup bitince kareleri temizler. Geçici kayıpsız RGB segmentleri video süresiyle büyür. Başarılı işte temizlenir; hata/iptalde inceleme için korunur. Disk alanı kontrolü vardır. Model her grupta yeniden yüklenir; doğrudan Rust/FFI çıkarımı henüz yoktur.
+Bunun için yerel çalışan, kaynak kodu incelenebilen ve birlikte geliştirilebilen bir uygulama yapıyoruz. Popy hesap veya abonelik gerektirmez. Videoların bilgisayarında işlenir. Tema, eşlikçi ve kısayollar gibi seçimler de sana aittir.
 
-Vulkan sürücüsü gerekir. AMD Radeon iGPU üzerinde teknik testler yapıldı. RTX 30/40/50, ayrı AMD ve Intel kartları hedefleniyor; bu ailelerde test edilmiş uyumluluk iddiası yok.
+## Neler yapabilirsin?
 
-Geliştirme için Windows x64, PowerShell 7, MSVC ve Windows SDK kütüphaneleri gerekir:
+- **Desteklenen videoları 2× büyüt:** gerçek çekim veya animasyon için Real-ESRGAN modellerini seç.
+- **Otomatik rengi açıp kapat:** ton, kontrast ve hafif doygunluk düzeltmesi uygula.
+- **Kısa önizleme al:** ilk kareyi kaydırıcıyla karşılaştır; hareketi değerlendirmek için çıkan videoyu aç.
+- **Kuyruğu yönet:** ilerlemeyi izle, durdur, yeniden dene, sıralamayı değiştir ve her işin sonucuna ayrı klasörden ulaş.
+- **Çalışma alanını kişiselleştir:** açık/koyu tema, azaltılmış hareket, arayüz boyutu ve tilki/ayı/gizli eşlikçi seçeneklerini kullan.
+- **Klavyeyle çalış:** kısayolları Ayarlar'dan yeniden ata.
+- **20 arayüz dilinden birini seç:** varsayılan dil İngilizcedir.
+- **Uygulama içinden güncelle:** yeni sürümü doğrulanmış paketle indirip kur; GitHub sayfasına gitmen gerekmez.
+
+Otomatik renk, siyah beyaz görüntüye yeni renk ekleme özelliği değildir. Popy mevcut modelleri kullanır; iyileştirme kalitesi kaynağa ve modele göre değişir.
+
+## Başlangıç
+
+1. Windows x64 **Setup EXE** dosyasını indirip kur; taşınabilir kullanım için ZIP'i tamamen çıkar.
+2. Popy'yi aç. İlk kullanımda **Set up tools** düğmesine (**F8**) bas veya `Setup Tools.cmd` dosyasını çalıştır.
+3. **Ctrl+O** ile video ekle, modelini seç ve **F5** ile önizleme al.
+4. **Ctrl+Enter** ile kuyruğu işle. Sonuçlar yeni klasörlere yazılır; kaynak dosyaların korunur.
+
+İlk kurulum FFmpeg, ncnn ve modelleri indirir. Hazır uygulamayı kullanmak için Rust veya Visual Studio gerekmez. Kurulumdan sonra video işleme yereldir; açıkça başlattığın güncelleme kontrolleri ve indirmeler internet kullanır. Dosya sınırları ve sorun giderme için [rehbere](docs/QUICKSTART.tr.md) bak.
+
+| Kısayol | İşlem |
+|---|---|
+| Ctrl+O | Video ekle |
+| F5 | Önizleme oluştur |
+| Ctrl+Enter | Kuyruğu işle |
+| Ctrl+Shift+X | Kuyruğu durdur |
+| Boşluk / B / A | Basılı tutarak kaynak / kaynak / iyileştirilmiş |
+| Alt+Sol / Sağ | Video seç |
+| Alt+Yukarı / Aşağı | Seçili işi sırala |
+| Ctrl+, / F1 | Ayarlar / kısayol düzenleyicisi |
+| F6 / Ctrl+B | Tema / eşlikçi değiştir |
+| Ctrl+U | Güncellemeleri denetle |
+
+## Diller
+
+English, Türkçe, Azərbaycanca, हिन्दी, Русский, Español, Português, Français, Deutsch, العربية, 简体中文, 日本語, 한국어, Italiano, Nederlands, Polski, Українська, Bahasa Indonesia, Tiếng Việt ve ไทย.
+
+Arayüz çevirileri dahildir; ana dilde inceleme katkılarını bekliyoruz. Yerel dosya pencereleri işletim sisteminin dilini izler, bazı teknik tanılar çevrilmemiş olabilir.
+
+## Mevcut sürüm
+
+**0.2.0-preview.2**, Windows x64 ve Vulkan sürücüsünü hedefler. Progressive H.264, sabit FPS, açık BT.709 SDR renk bilgisi ve isteğe bağlı hizalı AAC ses kabul eder. Çıktı 2×'tir. Genel model girdisi en fazla 960×540, anime modeli girdisi 1920×1080 olabilir.
+
+HDR, VFR, rotasyon, interlaced ve diğer kodek/akış düzenleri geliştirilmeye devam ediyor. Mevcut motor küçük kare grupları ve geçici kayıpsız segmentler kullandığı için uzun videolar disk alanı gerektirir. Doğal video kalitesi, çok saatlik kararlılık ve geniş GPU matrisi hâlâ sürüm kapılarıdır. Yerel GPU testleri AMD Radeon iGPU'da yapıldı; RTX, ayrı AMD ve Intel uyumluluğu sertifikalandırılmadı.
+
+Görseller gerçek uygulama oturumundan alınmıştır. Üretilmiş teknik klipler işleyişi gösterir; doğal görüntüde restorasyon kalitesi kanıtı değildir.
+
+## Geliştirme ve katkı
+
+Popy; Rust, egui/eframe ve ncnn/Vulkan ile geliştiriliyor. Kalite testleri, donanım doğrulaması, çeviri ve kullanılabilirlik katkılarına açığız.
 
 ```powershell
 .\scripts\bootstrap.ps1
 .\scripts\dev.ps1 test
 .\scripts\dev.ps1 build --release
-.\target\release\popy-desktop.exe
 ```
 
-CLI ile tam klip:
+[Geliştirme durumu](docs/STATUS.md) · [Yol haritası](docs/ROADMAP.md) · [İmzalı güncellemeler](docs/UPDATES.md) · [Benchmark araçları](benchmarks/README.md)
 
-```powershell
-.\target\release\popy.exe enhance --input video.mp4 --out runs/export-01 --model general --auto-color
-```
+## Lisans ve teşekkür
 
-`--preview-seconds 3` kısa örnek üretir. `benchmark` ve `suite`, Lanczos karşılaştırması ve tekrarlı ölçümler için korunmuştur. Ayrıntılar [İngilizce README](README.md) ve [benchmark rehberinde](benchmarks/README.md).
+Popy'nin özgün kodu [Apache-2.0](LICENSE) lisanslıdır. Araçlar, fontlar ve model ağırlıkları kendi [lisanslarına](docs/THIRD_PARTY.md) tabidir.
 
-Kod [Apache-2.0](LICENSE) lisanslıdır. FFmpeg, ncnn, Real-ESRGAN ve ağırlıkları ayrı lisanslara tabidir; [envanteri](docs/THIRD_PARTY.md) incele. Popy bağımsızdır, Topaz Labs ile bağlantısı yoktur.
+[Real-ESRGAN](https://github.com/xinntao/Real-ESRGAN), [ncnn](https://github.com/Tencent/ncnn), [FFmpeg](https://ffmpeg.org/) ve [egui](https://github.com/emilk/egui) çalışmalarının üzerine kurulmuştur. Popy bağımsızdır; Adobe veya Topaz Labs ile bağlantısı yoktur.

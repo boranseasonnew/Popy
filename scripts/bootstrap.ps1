@@ -5,10 +5,17 @@ $projectRoot = Split-Path $PSScriptRoot -Parent
 $toolsRoot = Join-Path $projectRoot '.tools'
 $downloads = Join-Path $toolsRoot 'downloads'
 New-Item -ItemType Directory -Path $downloads -Force | Out-Null
+$incompleteMarker = Join-Path $toolsRoot 'setup-incomplete'
+[IO.File]::WriteAllText($incompleteMarker,'Runtime setup is incomplete.')
 
 function Get-VerifiedArchive([string]$Uri, [string]$Name, [string]$ExpectedHash) {
     $archive = Join-Path $downloads $Name
-    if (!(Test-Path -LiteralPath $archive)) { Invoke-WebRequest -Uri $Uri -OutFile $archive -TimeoutSec 600 }
+    if (!(Test-Path -LiteralPath $archive)) {
+        $partial = $archive + '.partial'
+        Invoke-WebRequest -Uri $Uri -OutFile $partial -TimeoutSec 600 -UseBasicParsing
+        if ((Get-FileHash -LiteralPath $partial -Algorithm SHA256).Hash -ne $ExpectedHash) { throw "Checksum mismatch for $Name. Download is not used." }
+        Move-Item -LiteralPath $partial -Destination $archive
+    }
     $actual = (Get-FileHash -LiteralPath $archive -Algorithm SHA256).Hash
     if ($actual -ne $ExpectedHash) { throw "Checksum mismatch for $Name. Download is not used." }
     return $archive
@@ -21,16 +28,12 @@ $ffmpegHash = '60F467265B1E312373DBCD92200C2618A74850F98D3D078E94296BB3FA2047BA'
 $ffmpegArchive = Get-VerifiedArchive $ffmpegUrl 'ffmpeg-github.zip' $ffmpegHash
 $ffmpegDirectory = Join-Path $toolsRoot 'ffmpeg-github'
 $ffmpegBin = Join-Path $ffmpegDirectory 'ffmpeg-9.0.2-essentials_build\bin'
-if (!(Test-Path -LiteralPath (Join-Path $ffmpegBin 'ffprobe.exe'))) {
-    Expand-Archive -LiteralPath $ffmpegArchive -DestinationPath $ffmpegDirectory -Force
-}
+Expand-Archive -LiteralPath $ffmpegArchive -DestinationPath $ffmpegDirectory -Force
 $modelUrl = 'https://github.com/xinntao/Real-ESRGAN/releases/download/v0.2.5.0/realesrgan-ncnn-vulkan-20220424-windows.zip'
 $modelHash = 'ABC02804E17982A3BE33675E4D471E91EA374E65B70167ABC09E31ACB412802D'
 $modelArchive = Get-VerifiedArchive $modelUrl 'realesrgan-models-20220424.zip' $modelHash
 $modelDirectory = Join-Path $toolsRoot 'realesrgan-models'
-if (!(Test-Path -LiteralPath (Join-Path $modelDirectory 'models\realesrgan-x4plus.bin'))) {
-    Expand-Archive -LiteralPath $modelArchive -DestinationPath $modelDirectory -Force
-}
+Expand-Archive -LiteralPath $modelArchive -DestinationPath $modelDirectory -Force
 
 if (!$SkipRust) {
     $env:CARGO_HOME = Join-Path $toolsRoot 'cargo'
@@ -66,5 +69,6 @@ $provenanceJson = [ordered]@{
     )
 } | ConvertTo-Json -Depth 5
 [IO.File]::WriteAllText((Join-Path $toolsRoot 'provenance.json'), $provenanceJson, (New-Object Text.UTF8Encoding($false)))
+Remove-Item -LiteralPath $incompleteMarker
 if ($SkipRust) { Write-Output 'Tools ready. You can now open popy-desktop.exe.' }
 else { Write-Output 'Local tools ready. Run: .\scripts\dev.ps1 test' }

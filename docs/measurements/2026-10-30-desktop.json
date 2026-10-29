@@ -1,0 +1,13 @@
+{
+  "version": "0.2.0-preview.2",
+  "platform": "windows-x64",
+  "gpu_test_device": "AMD Radeon(TM) Graphics integrated GPU",
+  "automated_tests_passed": 24,
+  "subprocess_helpers_invoked_by_other_tests": 2,
+  "locale_render_checks": ["en", "tr", "az", "hi", "ru", "es", "pt", "fr", "de", "ar", "zh", "ja", "ko", "it", "nl", "pl", "uk", "id", "vi", "th"],
+  "keyboard_event_route_passed": true,
+  "desktop_gpu_preview_passed": true,
+  "preview_source": "locally generated faded-144p technical pattern",
+  "update_helper_scenarios": ["replacement", "rollback", "protected-user-data", "path-escape-rejection"],
+  "limits": "UI rendering does not certify native-speaker translation quality. Synthetic media is not natural-footage restoration evidence. This device does not establish a broader GPU compatibility matrix."
+}

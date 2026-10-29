@@ -1,4 +1,5 @@
 * text=auto eol=lf
 *.png binary
+*.bin binary
 *.mp4 binary
 *.ps1 text eol=lf
