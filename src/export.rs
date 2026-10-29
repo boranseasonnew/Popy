@@ -44,7 +44,10 @@ pub struct Progress {
 }
 
 fn batch_size(width: u32, height: u32, native_scale: u32) -> usize {
-    let per_frame = u64::from(width) * u64::from(height) * 3 * (1 + u64::from(native_scale).pow(2));
+    let per_frame = u64::from(width)
+        .saturating_mul(u64::from(height))
+        .saturating_mul(3)
+        .saturating_mul(1 + u64::from(native_scale).pow(2));
     (FRAME_BUDGET / per_frame.max(1)).clamp(1, 24) as usize
 }
 
@@ -82,23 +85,33 @@ pub fn enhance(tools: &Tools, options: ExportOptions) -> Result<PathBuf> {
     };
     let result = (|| -> Result<()> {
         write_progress(&out, &mut progress, start)?;
-        let input = external_path(&options.input)?;
-        let info = probe(tools, &input)?;
+        let source = external_path(&options.input)?;
+        let source_hash = sha256(&source)?;
+        let work = out.join("work");
+        fs::create_dir(&work)?;
+        fs::create_dir(work.join("segments"))?;
+        progress.stage = "prepare".into();
+        progress.message = "Input format, color and timing are being prepared".into();
+        write_progress(&out, &mut progress, start)?;
+        let prepared =
+            crate::import::prepare(tools, &source, &work, &logs, options.preview_seconds)?;
+        let input = prepared.path;
+        let info = prepared.media;
         let native = options.model.native_scale();
         ensure!(
             info.width > 0 && info.height > 0 && info.width % 2 == 0 && info.height % 2 == 0,
             "Girdi boyutları pozitif ve çift olmalı"
         );
         ensure!(
-            info.width <= 3840 / native && info.height <= 2160 / native,
-            "Modelin yerel çıktısı en fazla 3840×2160 olmalı. Genel model 4×, anime 2× çalışır."
+            info.width.checked_mul(native).is_some() && info.height.checked_mul(native).is_some(),
+            "Native model dimensions exceed the image encoder's addressable size"
         );
         let frames = options
             .preview_seconds
             .map(|s| (s * info.rate.fps()).floor() as usize)
             .unwrap_or(info.frame_count)
             .min(info.frame_count);
-        ensure!(frames >= 2, "En az iki kare gerekiyor");
+        ensure!(frames >= 1, "No video frames in the selected preview");
         let batch = batch_size(info.width, info.height, native);
         let duration = frames as f64 / info.rate.fps();
         progress.total_frames = frames;
@@ -112,17 +125,23 @@ pub fn enhance(tools: &Tools, options: ExportOptions) -> Result<PathBuf> {
             frames
         );
         write_progress(&out, &mut progress, start)?;
-        let source_hash = sha256(&input)?;
         let model_hashes = options.model.hashes(tools)?;
         let _lease = gpu_lease(options.gpu)?;
-        let work = out.join("work");
-        fs::create_dir(&work)?;
-        fs::create_dir(work.join("segments"))?;
         // Reserve conservatively for lossless 2× RGB video + the current native
         // batch. Compressed segments are usually smaller; user sees estimate.
-        let estimate = u64::from(info.width) * u64::from(info.height) * 12 * frames as u64
-            + FRAME_BUDGET
-            + 256 * 1024 * 1024;
+        let pixels = u64::from(info.width)
+            .checked_mul(u64::from(info.height))
+            .context("Image size overflow")?;
+        let current_batch = pixels
+            .checked_mul(3 * (1 + u64::from(native).pow(2)))
+            .context("Batch size overflow")?
+            .max(FRAME_BUDGET);
+        let estimate = pixels
+            .checked_mul(12)
+            .and_then(|n| n.checked_mul(frames as u64))
+            .and_then(|n| n.checked_add(current_batch))
+            .and_then(|n| n.checked_add(256 * 1024 * 1024))
+            .context("Temporary disk estimate overflow")?;
         ensure_space(&out, estimate)?;
         let mut decoder = Decoder::start(tools, &input, &info, frames, &logs)?;
         let mut list = File::create(work.join("segments.txt"))?;
@@ -313,7 +332,7 @@ pub fn enhance(tools: &Tools, options: ExportOptions) -> Result<PathBuf> {
             );
         }
         ensure!(
-            sha256(&input)? == source_hash,
+            sha256(&source)? == source_hash,
             "Kaynak dosya işlem sırasında değişti"
         );
         check_cancelled()?;
@@ -325,7 +344,8 @@ pub fn enhance(tools: &Tools, options: ExportOptions) -> Result<PathBuf> {
                 "-frames:v", "1", "-update", "1"]).arg(out.join("comparison.png"));
         stages.push(run(&mut compare, "comparison", &logs, STAGE_LIMIT)?);
         let report = json!({"schema_version":2,"state":"completed","app_version":env!("CARGO_PKG_VERSION"),
-            "source":input,"source_sha256":source_hash,"input_media":info,"output_media":actual,
+            "source":source,"source_sha256":source_hash,"input_media":info,"output_media":actual,
+            "import":prepared.conversion,"audio_reference":if prepared.conversion.is_some() {"normalized_import"} else {"original"},
             "model":{"name":options.model.name(),"native_scale":native,"output_scale":2,"hashes":model_hashes},
             "gpu_index":options.gpu,"tile":options.tile,"auto_color":options.auto_color,
             "runtime":{"ncnn_sha256":sha256(&tools.ncnn)?,"ffmpeg_sha256":sha256(&tools.ffmpeg)?,"app_sha256":sha256(&std::env::current_exe()?)?},

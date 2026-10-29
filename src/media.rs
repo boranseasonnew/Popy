@@ -23,10 +23,6 @@ impl Rate {
             rate.numerator > 0 && rate.denominator > 0,
             "Geçersiz kare hızı"
         );
-        ensure!(
-            (1.0..=120.0).contains(&rate.fps()),
-            "Kare hızı 1–120 aralığında olmalı"
-        );
         Ok(rate)
     }
     pub fn fps(self) -> f64 {
@@ -166,7 +162,7 @@ pub fn probe(tools: &Tools, input: &Path) -> Result<Media> {
             Ok(())
         },
     )?;
-    ensure!(frame_count >= 2, "En az iki kare gerekiyor");
+    ensure!(frame_count >= 1, "Video karesi bulunamadı");
     let first_pts = first_pts.context("Kare yok")?;
     ensure!(
         first_pts.abs() < 0.002,
@@ -243,8 +239,10 @@ mod tests {
     }
     #[test]
     fn invalid_rates_rejected() {
-        for text in ["0/0", "30/0", "0/1", "30", "NaN/1", "200/1"] {
+        for text in ["0/0", "30/0", "0/1", "30", "NaN/1"] {
             assert!(Rate::parse(text).is_err());
         }
+        assert!(Rate::parse("240/1").is_ok());
+        assert!(Rate::parse("1/2").is_ok());
     }
 }

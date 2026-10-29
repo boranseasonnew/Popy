@@ -8,7 +8,7 @@
 
 Popy is an open-source desktop app for local video enhancement. Upscale a video, adjust its color, compare the result and process your queue from a calm, keyboard-friendly workspace—with a fox or bear keeping you company.
 
-[Download for Windows](https://github.com/boranseasonnew/Popy/releases/download/v0.2.0-preview.2/Popy-0.2.0-preview.2-setup.exe) · [All downloads](https://github.com/boranseasonnew/Popy/releases/tag/v0.2.0-preview.2) · [Türkçe](README.tr.md) · [Quick start](docs/QUICKSTART.md)
+[Download for Windows](https://github.com/boranseasonnew/Popy/releases/download/v0.2.0-preview.3/Popy-0.2.0-preview.3-setup.exe) · [All downloads](https://github.com/boranseasonnew/Popy/releases/tag/v0.2.0-preview.3) · [Türkçe](README.tr.md) · [Quick start](docs/QUICKSTART.md)
 
 [![Rust checks](https://github.com/boranseasonnew/Popy/actions/workflows/check.yml/badge.svg)](https://github.com/boranseasonnew/Popy/actions/workflows/check.yml)
 
@@ -70,9 +70,9 @@ Interface translations are included; native-speaker review is welcome. Native di
 
 ## Current release
 
-**0.2.0-preview.2** targets Windows x64 with a Vulkan driver. It accepts progressive H.264, constant FPS, explicit BT.709 SDR color metadata and optional aligned AAC audio. Output is 2×. General-model input is limited to 960×540; anime-model input to 1920×1080.
+**0.2.0-preview.3** targets Windows x64 with a Vulkan driver. Videos readable by FFmpeg are automatically imported, including different codecs, pixel formats and color depths. VFR is converted to CFR, rotation is applied, and PQ/HLG HDR is tone-mapped to SDR. Missing color metadata uses assumptions recorded in the report. Output remains 2× H.264/AAC MP4 in 8-bit BT.709 SDR. The old model-specific input resolution caps are removed; hardware, disk and encoder limits still apply.
 
-HDR, VFR, rotation, interlacing and other codecs/layouts are still being developed. The current engine uses bounded frame batches and temporary lossless segments, so long videos require disk space. Natural-video quality, multi-hour stability and a broader GPU matrix remain release gates. Local GPU tests used an AMD Radeon iGPU; RTX, discrete AMD and Intel support is not certified.
+The first real video and first audio track are selected; additional tracks are omitted. Conversion does not preserve HDR or every original encoding property. Corrupt, encrypted and unsupported proprietary formats may still fail. The current engine uses bounded frame batches and temporary lossless segments, so long videos require disk space. Natural-video quality, multi-hour stability and a broader GPU matrix remain release gates. Local GPU tests used an AMD Radeon iGPU; RTX, discrete AMD and Intel support is not certified.
 
 The screenshots show a real application session. Generated technical clips demonstrate the workflow; they do not establish restoration quality on natural footage.
 

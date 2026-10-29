@@ -12,12 +12,13 @@ const HELP: &str = "Popy · yerel video iyileştirme · 0.2 ön sürüm\n\n\
 popy doctor\n\
 popy fixtures --out fixtures/generated/test-01\n\
 popy inspect --input video.mp4\n\
+popy prepare --input video --out runs/import-01 [--preview-seconds 3]\n\
 popy enhance --input video.mp4 --out runs/export-01 [--model general|anime] [--auto-color] [--preview-seconds 3] [--gpu 0] [--tile 64] [--cancel-file cancel.flag]\n\
 popy suite --manifest benchmarks/technical.json [--out runs/suite-01 | --dry-run]\n\
 popy benchmark --input video.mp4 --out runs/test-01 --model general|anime --seconds 10 --gpu 0 --tile 64 --rights \"source rights\" [--auto-color]\n\n\
 Genel model yerel 4×, son çıktı 2×; anime modeli yerel 2×.\n\
 Otomatik renk: ton/kontrast + hafif doygunluk; siyah beyaz renklendirme değildir.\n\
-H.264 / AAC, CFR, 8-bit BT.709 limited SDR; HDR, VFR ve rotasyon desteklenmiyor.\n\
+enhance: FFmpeg'in okuyabildiği girdiler otomatik hazırlanır; HDR → SDR, VFR → CFR.\n\
 enhance tam video veya kısa önizleme; benchmark en fazla 10 sn/300 kare.\n\
 enhance sınırlı PNG grupları ve geçici kayıpsız segmentler kullanır.\n\
 Çıktı klasörü yeni olmalı. Ctrl+C mevcut alt süreci sonlandırır, günlükleri korur.";
@@ -105,6 +106,38 @@ fn execute() -> Result<()> {
             allowed(&flags, &["input"])?;
             let info = probe(&tools, &PathBuf::from(required(&flags, "input")?))?;
             println!("{}", serde_json::to_string_pretty(&info)?);
+        }
+        "prepare" => {
+            allowed(&flags, &["input", "out", "preview-seconds"])?;
+            let input = popy::tools::external_path(&PathBuf::from(required(&flags, "input")?))?;
+            let hash = popy::tools::sha256(&input)?;
+            let out = PathBuf::from(required(&flags, "out")?);
+            std::fs::create_dir_all(
+                out.parent()
+                    .filter(|p| !p.as_os_str().is_empty())
+                    .unwrap_or(std::path::Path::new(".")),
+            )?;
+            std::fs::create_dir(&out)?;
+            let logs = out.join("logs");
+            std::fs::create_dir(&logs)?;
+            let preview = flags
+                .get("preview-seconds")
+                .map(|s| s.parse::<f64>())
+                .transpose()?;
+            if let Some(seconds) = preview {
+                ensure!(
+                    seconds.is_finite() && (0.1..=10.0).contains(&seconds),
+                    "Preview must be 0.1–10 seconds"
+                );
+            }
+            let prepared = popy::import::prepare(&tools, &input, &out, &logs, preview)?;
+            ensure!(
+                popy::tools::sha256(&input)? == hash,
+                "Source changed during import"
+            );
+            let result = json!({"source":input,"source_sha256":hash,"prepared":prepared.path,"media":prepared.media,"conversion":prepared.conversion,"source_unchanged":true});
+            popy::pipeline::write_json(&out.join("import.json"), &result)?;
+            println!("{}", serde_json::to_string_pretty(&result)?);
         }
         "enhance" => {
             allowed(

@@ -16,3 +16,12 @@ jobs:
       - run: cargo clippy --locked --all-targets -- -D warnings
       - run: cargo test --locked
       - run: cargo build --locked --release
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: windows-verified-binaries
+          path: |
+            target/release/popy.exe
+            target/release/popy-desktop.exe
+            target/release/popy-release.exe
+          if-no-files-found: error
+          retention-days: 3

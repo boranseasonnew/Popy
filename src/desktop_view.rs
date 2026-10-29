@@ -376,7 +376,14 @@ impl PopyApp {
             Add => {
                 if let Some(files) = rfd::FileDialog::new()
                     .set_title(self.l("add"))
-                    .add_filter("Video", &["mp4", "mkv", "mov"])
+                    .add_filter(
+                        "Video",
+                        &[
+                            "mp4", "mkv", "mov", "avi", "webm", "m4v", "ts", "mts", "m2ts", "mpg",
+                            "mpeg", "vob", "flv", "wmv", "ogv", "mxf", "3gp", "gif", "apng",
+                        ],
+                    )
+                    .add_filter("All files", &["*"])
                     .pick_files()
                 {
                     self.add_files(files);
@@ -1013,17 +1020,9 @@ impl PopyApp {
                         .size(11.0),
                     );
                     ui.label(
-                        RichText::new(format!(
-                            "{} ≤ {}",
-                            l("source"),
-                            if options.model == Model::General {
-                                "960×540"
-                            } else {
-                                "1920×1080"
-                            }
-                        ))
-                        .size(10.0)
-                        .color(p.muted),
+                        RichText::new(format!("{} · {}", l("source"), "FFmpeg"))
+                            .size(10.0)
+                            .color(p.muted),
                     );
                     ui.add_space(8.0);
                     ui.separator();

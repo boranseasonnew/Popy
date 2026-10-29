@@ -8,7 +8,7 @@
 
 Popy, bilgisayarında çalışan açık kaynak bir video iyileştirme uygulamasıdır. Videonu büyüt, rengini ayarla, sonucu karşılaştır ve kuyruğunu sade bir çalışma alanından yönet. Bir tilki ya da ayı sana eşlik etsin; fareyi, klavyeyi ve arayüzü istediğin gibi kullan.
 
-[Windows için indir](https://github.com/boranseasonnew/Popy/releases/download/v0.2.0-preview.2/Popy-0.2.0-preview.2-setup.exe) · [Tüm indirmeler](https://github.com/boranseasonnew/Popy/releases/tag/v0.2.0-preview.2) · [English](README.md) · [Kullanım rehberi](docs/QUICKSTART.tr.md)
+[Windows için indir](https://github.com/boranseasonnew/Popy/releases/download/v0.2.0-preview.3/Popy-0.2.0-preview.3-setup.exe) · [Tüm indirmeler](https://github.com/boranseasonnew/Popy/releases/tag/v0.2.0-preview.3) · [English](README.md) · [Kullanım rehberi](docs/QUICKSTART.tr.md)
 
 [![Rust checks](https://github.com/boranseasonnew/Popy/actions/workflows/check.yml/badge.svg)](https://github.com/boranseasonnew/Popy/actions/workflows/check.yml)
 
@@ -70,9 +70,9 @@ Arayüz çevirileri dahildir; ana dilde inceleme katkılarını bekliyoruz. Yere
 
 ## Mevcut sürüm
 
-**0.2.0-preview.2**, Windows x64 ve Vulkan sürücüsünü hedefler. Progressive H.264, sabit FPS, açık BT.709 SDR renk bilgisi ve isteğe bağlı hizalı AAC ses kabul eder. Çıktı 2×'tir. Genel model girdisi en fazla 960×540, anime modeli girdisi 1920×1080 olabilir.
+**0.2.0-preview.3**, Windows x64 ve Vulkan sürücüsünü hedefler. FFmpeg tarafından okunabilen farklı kodek, piksel biçimi ve renk derinlikleri otomatik hazırlanır. VFR sabit FPS'ye, PQ/HLG HDR ise SDR'ye dönüştürülür; rotasyon uygulanır. Eksik renk bilgileri için kullanılan varsayımlar rapora yazılır. Çıktı 2× H.264/AAC MP4, 8-bit BT.709 SDR'dir. Eski modele özel girdi çözünürlük sınırları kaldırıldı; donanım, disk ve kodlayıcı sınırları geçerlidir.
 
-HDR, VFR, rotasyon, interlaced ve diğer kodek/akış düzenleri geliştirilmeye devam ediyor. Mevcut motor küçük kare grupları ve geçici kayıpsız segmentler kullandığı için uzun videolar disk alanı gerektirir. Doğal video kalitesi, çok saatlik kararlılık ve geniş GPU matrisi hâlâ sürüm kapılarıdır. Yerel GPU testleri AMD Radeon iGPU'da yapıldı; RTX, ayrı AMD ve Intel uyumluluğu sertifikalandırılmadı.
+İlk gerçek video ve ilk ses akışı seçilir; ek akışlar aktarılmaz. HDR ve kaynak kodlamanın tüm özellikleri korunmaz. Bozuk, şifreli veya desteklenmeyen özel biçimler yine hata verebilir. Mevcut motor küçük kare grupları ve geçici kayıpsız segmentler kullandığı için uzun videolar disk alanı gerektirir. Doğal video kalitesi, çok saatlik kararlılık ve geniş GPU matrisi hâlâ sürüm kapılarıdır. Yerel GPU testleri AMD Radeon iGPU'da yapıldı; RTX, ayrı AMD ve Intel uyumluluğu sertifikalandırılmadı.
 
 Görseller gerçek uygulama oturumundan alınmıştır. Üretilmiş teknik klipler işleyişi gösterir; doğal görüntüde restorasyon kalitesi kanıtı değildir.
 

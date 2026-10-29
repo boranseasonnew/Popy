@@ -2380,7 +2380,7 @@ dependencies = [
 
 [[package]]
 name = "popy"
-version = "0.2.0-preview.2"
+version = "0.2.0-preview.3"
 dependencies = [
  "anyhow",
  "ed25519-dalek",
