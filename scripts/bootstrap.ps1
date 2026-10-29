@@ -51,10 +51,11 @@ if (!$SkipRust) {
 }
 
 $runtimeJson = [ordered]@{
-    ffmpeg = Join-Path $ffmpegBin 'ffmpeg.exe'
-    ffprobe = Join-Path $ffmpegBin 'ffprobe.exe'
-    ncnn = Join-Path $modelDirectory 'realesrgan-ncnn-vulkan.exe'
-    models = Join-Path $modelDirectory 'models'
+    # Relative to .tools/runtime.json so an installed package can be moved.
+    ffmpeg = 'ffmpeg-github\ffmpeg-9.0.2-essentials_build\bin\ffmpeg.exe'
+    ffprobe = 'ffmpeg-github\ffmpeg-9.0.2-essentials_build\bin\ffprobe.exe'
+    ncnn = 'realesrgan-models\realesrgan-ncnn-vulkan.exe'
+    models = 'realesrgan-models\models'
 } | ConvertTo-Json
 [IO.File]::WriteAllText((Join-Path $toolsRoot 'runtime.json'), $runtimeJson, (New-Object Text.UTF8Encoding($false)))
 $provenanceJson = [ordered]@{

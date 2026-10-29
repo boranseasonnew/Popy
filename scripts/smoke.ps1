@@ -6,6 +6,9 @@ try {
     $popy = Join-Path $projectRoot 'target\release\popy.exe'
     if (!(Test-Path -LiteralPath $popy)) { throw 'Build first: .\scripts\dev.ps1 build --release' }
     $runtime = Get-Content -LiteralPath '.tools\runtime.json' -Raw | ConvertFrom-Json
+    foreach ($key in @('ffmpeg','ffprobe','ncnn','models')) {
+        if (![IO.Path]::IsPathRooted($runtime.$key)) { $runtime.$key = Join-Path (Join-Path $projectRoot '.tools') $runtime.$key }
+    }
     $testRoot = Join-Path $projectRoot ('target\smoke\' + [guid]::NewGuid().ToString('N'))
     New-Item -ItemType Directory -Path $testRoot -Force | Out-Null
     $fixtureDirectory = Join-Path $testRoot 'fixtures'

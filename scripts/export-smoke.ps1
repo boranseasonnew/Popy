@@ -6,6 +6,9 @@ try {
     $popy = Join-Path $projectRoot 'target\release\popy.exe'
     $desktop = Join-Path $projectRoot 'target\release\popy-desktop.exe'
     $runtime = Get-Content -LiteralPath '.tools\runtime.json' -Raw | ConvertFrom-Json
+    foreach ($key in @('ffmpeg','ffprobe','ncnn','models')) {
+        if (![IO.Path]::IsPathRooted($runtime.$key)) { $runtime.$key = Join-Path (Join-Path $projectRoot '.tools') $runtime.$key }
+    }
     $testRoot = Join-Path $projectRoot ('target\export-smoke\' + [guid]::NewGuid().ToString('N'))
     New-Item -ItemType Directory -Path $testRoot -Force | Out-Null
     function New-Clip([string]$Path, [string]$Rate, [string]$Seconds, [switch]$Silent) {
