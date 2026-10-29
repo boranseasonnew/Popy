@@ -206,6 +206,9 @@ impl PopyApp {
                 .join("System32/WindowsPowerShell/v1.0/powershell.exe");
             let mut command = Command::new(powershell);
             command
+                // A GUI launched from PowerShell 7 can inherit its module path.
+                // Let Windows PowerShell initialize its own compatible modules.
+                .env_remove("PSModulePath")
                 .current_dir(&self.root)
                 .args([
                     "-NoProfile",

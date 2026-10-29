@@ -410,6 +410,7 @@ pub fn install(root: &Path, staged: &StagedUpdate) -> Result<()> {
         .join("System32/WindowsPowerShell/v1.0/powershell.exe");
     let mut command = Command::new(powershell);
     command
+        .env_remove("PSModulePath")
         .args([
             "-NoProfile",
             "-NonInteractive",
