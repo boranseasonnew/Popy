@@ -4,10 +4,50 @@
   "gpu_test_device": "AMD Radeon(TM) Graphics integrated GPU",
   "automated_tests_passed": 24,
   "subprocess_helpers_invoked_by_other_tests": 2,
-  "locale_render_checks": ["en", "tr", "az", "hi", "ru", "es", "pt", "fr", "de", "ar", "zh", "ja", "ko", "it", "nl", "pl", "uk", "id", "vi", "th"],
+  "locale_render_checks": [
+    "en",
+    "tr",
+    "az",
+    "hi",
+    "ru",
+    "es",
+    "pt",
+    "fr",
+    "de",
+    "ar",
+    "zh",
+    "ja",
+    "ko",
+    "it",
+    "nl",
+    "pl",
+    "uk",
+    "id",
+    "vi",
+    "th"
+  ],
   "keyboard_event_route_passed": true,
   "desktop_gpu_preview_passed": true,
   "preview_source": "locally generated faded-144p technical pattern",
-  "update_helper_scenarios": ["replacement", "rollback", "protected-user-data", "path-escape-rejection"],
-  "limits": "UI rendering does not certify native-speaker translation quality. Synthetic media is not natural-footage restoration evidence. This device does not establish a broader GPU compatibility matrix."
+  "update_helper_scenarios": [
+    "replacement",
+    "rollback",
+    "protected-user-data",
+    "path-escape-rejection"
+  ],
+  "limits": "UI rendering does not certify native-speaker translation quality. Synthetic media is not natural-footage restoration evidence. This device does not establish a broader GPU compatibility matrix.",
+  "packaged_file_hashes_verified": 486,
+  "native_setup_with_verified_cached_archives_passed": true,
+  "moved_unicode_portable_gpu_preview_passed": true,
+  "setup_exe_install_uninstall_and_user_data_preservation_passed": true,
+  "independent_clean_windows_tested": false,
+  "public_github_update_transition": {
+    "from": "0.2.0-preview.1 (internal local fixture)",
+    "to": "0.2.0-preview.2",
+    "completed": true,
+    "restarted_gui_verified": true,
+    "file_hashes_verified": 486,
+    "runtime_and_preferences_and_exports_preserved": true,
+    "archive_sha256": "689da861fbdf3fd8b1f65aca6e430a695742e45ee3f948f2cfe4a3f26937d012"
+  }
 }

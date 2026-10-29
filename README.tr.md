@@ -8,7 +8,7 @@
 
 Popy, bilgisayarında çalışan açık kaynak bir video iyileştirme uygulamasıdır. Videonu büyüt, rengini ayarla, sonucu karşılaştır ve kuyruğunu sade bir çalışma alanından yönet. Bir tilki ya da ayı sana eşlik etsin; fareyi, klavyeyi ve arayüzü istediğin gibi kullan.
 
-[Windows için indir](https://github.com/boranseasonnew/Popy/releases/tag/v0.2.0-preview.2) · [English](README.md) · [Kullanım rehberi](docs/QUICKSTART.tr.md)
+[Windows için indir](https://github.com/boranseasonnew/Popy/releases/download/v0.2.0-preview.2/Popy-0.2.0-preview.2-setup.exe) · [Tüm indirmeler](https://github.com/boranseasonnew/Popy/releases/tag/v0.2.0-preview.2) · [English](README.md) · [Kullanım rehberi](docs/QUICKSTART.tr.md)
 
 [![Rust checks](https://github.com/boranseasonnew/Popy/actions/workflows/check.yml/badge.svg)](https://github.com/boranseasonnew/Popy/actions/workflows/check.yml)
 

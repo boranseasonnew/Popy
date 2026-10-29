@@ -22,6 +22,8 @@ The ZIP contains both `popy-desktop.exe` and its CLI worker. Keep the packaged f
 
 24 automated tests cover media contracts, timing, supervision, shortcuts, translations and update security. Local integration checks cover GPU processing, cancellation, AAC/source integrity and the desktop preview. Update-helper tests cover replacement, rollback, protected data and path escape rejection. GitHub Actions runs format, Clippy, tests and a Windows release build.
 
+The final ZIP passed 486 file checks, native first-run setup using verified cached archives, and a GPU preview after moving to a Unicode folder. The actual Setup EXE passed installation and uninstall tests while preserving generated settings/exports. An internal preview.1 client also completed a real signed update from this public GitHub release, restarted as preview.2, and preserved its preferences/runtime/exports. These checks used the existing Windows machine, not an independent clean OS.
+
 This remains a preview. Output is 2×; accepted input is progressive constant-FPS H.264 with explicit BT.709 SDR metadata and optional aligned AAC. General input is limited to 960×540; anime input to 1920×1080. Automatic color is tone/contrast/saturation correction, not grayscale AI colorization. The first-frame comparison is static; moving results open in the system player.
 
 Natural-footage quality, multi-hour stability and broader GPU hardware validation remain open. Local GPU tests used an AMD Radeon iGPU. The EXE has no Windows Authenticode signature; the update package uses a separate Ed25519 signature.

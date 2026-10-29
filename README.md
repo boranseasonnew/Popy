@@ -8,7 +8,7 @@
 
 Popy is an open-source desktop app for local video enhancement. Upscale a video, adjust its color, compare the result and process your queue from a calm, keyboard-friendly workspace—with a fox or bear keeping you company.
 
-[Download for Windows](https://github.com/boranseasonnew/Popy/releases/tag/v0.2.0-preview.2) · [Türkçe](README.tr.md) · [Quick start](docs/QUICKSTART.md)
+[Download for Windows](https://github.com/boranseasonnew/Popy/releases/download/v0.2.0-preview.2/Popy-0.2.0-preview.2-setup.exe) · [All downloads](https://github.com/boranseasonnew/Popy/releases/tag/v0.2.0-preview.2) · [Türkçe](README.tr.md) · [Quick start](docs/QUICKSTART.md)
 
 [![Rust checks](https://github.com/boranseasonnew/Popy/actions/workflows/check.yml/badge.svg)](https://github.com/boranseasonnew/Popy/actions/workflows/check.yml)
 
