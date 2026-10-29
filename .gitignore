@@ -1,0 +1,10 @@
+/target/
+/.tools/
+/runs/
+/fixtures/generated/
+*.partial.mp4
+/branding/concepts/
+/branding/README.md
+.env
+.env.*
+!.env.example

@@ -1,0 +1,296 @@
+{
+  "date": "2026-10-29",
+  "os": "Microsoft Windows NT 10.0.26300.0",
+  "gpu": "AMD Radeon(TM) Graphics",
+  "driver": "31.0.21925.1001",
+  "system_ram_bytes": 16469532672,
+  "vram_measured": false,
+  "quality_gate_passed": false,
+  "runs": [
+    {
+      "report": "runs/anime-144p-10s-v2/report.json",
+      "report_sha256": "48ECD8C7EAB45A0D9BAEAEF047F0A2104579DC31E11BAC43D3333B9B2613783F",
+      "app_sha256": "df02d1684ee4dec2bad2bd06706086ee617efca9a35b90453d0a25d20693f3fb",
+      "model": {
+        "hashes": {
+          "realesr-animevideov3-x2.bin": "548a36f9c3f4ab8da56cd3b13badf23968bee207b396dad14d04b830e5f2ab2d",
+          "realesr-animevideov3-x2.param": "b88ff4f00ebf019a7fdac17fdd45a7fd3665d37509efc5baf2e4da2e24420a04"
+        },
+        "name": "realesr-animevideov3",
+        "native_scale": 2,
+        "output_scale": 2
+      },
+      "output_dimensions": [
+        512,
+        288
+      ],
+      "measurement": {
+        "ai_input_fps": 5.567261935169207,
+        "ai_seconds": 21.5545813,
+        "clip_seconds": 10.0,
+        "comparison_workflow_input_fps": 5.181741530906586,
+        "comparison_workflow_seconds": 23.1582373,
+        "frames": 120,
+        "note": "Workflow time includes Lanczos, contact sheet, probes and hashes. AI time includes PNG I/O. Peak RAM is per child process, not summed. GPU VRAM is not measured."
+      },
+      "stages": [
+        {
+          "name": "decode",
+          "peak_process_ram_bytes": 43851776,
+          "seconds": 0.3093931
+        },
+        {
+          "name": "ai",
+          "peak_process_ram_bytes": 171159552,
+          "seconds": 21.5545813
+        },
+        {
+          "name": "baseline",
+          "peak_process_ram_bytes": 95236096,
+          "seconds": 0.4119305
+        },
+        {
+          "name": "encode",
+          "peak_process_ram_bytes": 89743360,
+          "seconds": 0.4105472
+        },
+        {
+          "name": "comparison",
+          "peak_process_ram_bytes": 54476800,
+          "seconds": 0.1572717
+        }
+      ],
+      "auto_color": false,
+      "aac_packet_prefix_matches": true,
+      "source_unchanged": true
+    },
+    {
+      "report": "runs/anime-360p-10s/report.json",
+      "report_sha256": "04353FCAF4EB700508495CE0DC03C70D8CEB0635B913E0EA83B3D7BA57E28803",
+      "app_sha256": "df02d1684ee4dec2bad2bd06706086ee617efca9a35b90453d0a25d20693f3fb",
+      "model": {
+        "hashes": {
+          "realesr-animevideov3-x2.bin": "548a36f9c3f4ab8da56cd3b13badf23968bee207b396dad14d04b830e5f2ab2d",
+          "realesr-animevideov3-x2.param": "b88ff4f00ebf019a7fdac17fdd45a7fd3665d37509efc5baf2e4da2e24420a04"
+        },
+        "name": "realesr-animevideov3",
+        "native_scale": 2,
+        "output_scale": 2
+      },
+      "output_dimensions": [
+        1280,
+        720
+      ],
+      "measurement": {
+        "ai_input_fps": 0.958435436192489,
+        "ai_seconds": 125.2040518,
+        "clip_seconds": 10.0,
+        "comparison_workflow_input_fps": 0.92278267110759,
+        "comparison_workflow_seconds": 130.0414537,
+        "frames": 120,
+        "note": "Workflow time includes Lanczos, contact sheet, probes and hashes. AI time includes PNG I/O. Peak RAM is per child process, not summed. GPU VRAM is not measured."
+      },
+      "stages": [
+        {
+          "name": "decode",
+          "peak_process_ram_bytes": 77721600,
+          "seconds": 0.5634579
+        },
+        {
+          "name": "ai",
+          "peak_process_ram_bytes": 179118080,
+          "seconds": 125.2040518
+        },
+        {
+          "name": "baseline",
+          "peak_process_ram_bytes": 426565632,
+          "seconds": 1.5829290999999999
+        },
+        {
+          "name": "encode",
+          "peak_process_ram_bytes": 449073152,
+          "seconds": 1.5854436
+        },
+        {
+          "name": "comparison",
+          "peak_process_ram_bytes": 107212800,
+          "seconds": 0.2077043
+        }
+      ],
+      "auto_color": false,
+      "aac_packet_prefix_matches": true,
+      "source_unchanged": true
+    },
+    {
+      "report": "runs/general-144p-smoke/report.json",
+      "report_sha256": "01BCD8D7ACA7A4B74B93D5324DD7D5580E43D3B748720F09BB6330DC26290E9F",
+      "app_sha256": "333fbd43670dbb2346e42ebfd5bbb5bccf672facd6bfdf80742111002a86b129",
+      "model": {
+        "hashes": {
+          "realesrgan-x4plus.bin": "713ee713b0353afaa27976f0563a64a5043bd70b9bd8936c2e26e25ebcdbcddf",
+          "realesrgan-x4plus.param": "35330ececcea33b6c397a72548e788d5d53becee4734c50b7fada36e89f10a86"
+        },
+        "name": "realesrgan-x4plus",
+        "native_scale": 4,
+        "output_scale": 2
+      },
+      "output_dimensions": [
+        512,
+        288
+      ],
+      "measurement": {
+        "ai_input_fps": 0.1403443524116861,
+        "ai_seconds": 14.2506625,
+        "clip_seconds": 0.16666666666666666,
+        "comparison_workflow_input_fps": 0.13424910645305047,
+        "comparison_workflow_seconds": 14.8976783,
+        "frames": 2,
+        "note": "Workflow time includes Lanczos, contact sheet, probes and hashes. AI time includes PNG I/O. Peak RAM is per child process, not summed. GPU VRAM is not measured."
+      },
+      "stages": [
+        {
+          "name": "decode",
+          "peak_process_ram_bytes": 39567360,
+          "seconds": 0.1074836
+        },
+        {
+          "name": "ai",
+          "peak_process_ram_bytes": 1131098112,
+          "seconds": 14.2506625
+        },
+        {
+          "name": "baseline",
+          "peak_process_ram_bytes": 50794496,
+          "seconds": 0.1081869
+        },
+        {
+          "name": "encode",
+          "peak_process_ram_bytes": 43802624,
+          "seconds": 0.1576429
+        },
+        {
+          "name": "comparison",
+          "peak_process_ram_bytes": 38633472,
+          "seconds": 0.1063964
+        }
+      ],
+      "auto_color": false,
+      "aac_packet_prefix_matches": true,
+      "source_unchanged": true
+    },
+    {
+      "report": "runs/renk kapali 10s/report.json",
+      "report_sha256": "DF58A5CF648C8185258654B032025E2816A1177CF880EF950DCED91FF852F182",
+      "app_sha256": "333fbd43670dbb2346e42ebfd5bbb5bccf672facd6bfdf80742111002a86b129",
+      "model": {
+        "hashes": {
+          "realesr-animevideov3-x2.bin": "548a36f9c3f4ab8da56cd3b13badf23968bee207b396dad14d04b830e5f2ab2d",
+          "realesr-animevideov3-x2.param": "b88ff4f00ebf019a7fdac17fdd45a7fd3665d37509efc5baf2e4da2e24420a04"
+        },
+        "name": "realesr-animevideov3",
+        "native_scale": 2,
+        "output_scale": 2
+      },
+      "output_dimensions": [
+        512,
+        288
+      ],
+      "measurement": {
+        "ai_input_fps": 5.686913758867492,
+        "ai_seconds": 21.1010761,
+        "clip_seconds": 10.0,
+        "comparison_workflow_input_fps": 5.286029920224426,
+        "comparison_workflow_seconds": 22.7013471,
+        "frames": 120,
+        "note": "Workflow time includes Lanczos, contact sheet, probes and hashes. AI time includes PNG I/O. Peak RAM is per child process, not summed. GPU VRAM is not measured."
+      },
+      "stages": [
+        {
+          "name": "decode",
+          "peak_process_ram_bytes": 44167168,
+          "seconds": 0.3601676
+        },
+        {
+          "name": "ai",
+          "peak_process_ram_bytes": 155357184,
+          "seconds": 21.1010761
+        },
+        {
+          "name": "baseline",
+          "peak_process_ram_bytes": 95289344,
+          "seconds": 0.4096147
+        },
+        {
+          "name": "encode",
+          "peak_process_ram_bytes": 90361856,
+          "seconds": 0.4102943
+        },
+        {
+          "name": "comparison",
+          "peak_process_ram_bytes": 54165504,
+          "seconds": 0.107282
+        }
+      ],
+      "auto_color": false,
+      "aac_packet_prefix_matches": true,
+      "source_unchanged": true
+    },
+    {
+      "report": "runs/renk açık Türkçe 10s/report.json",
+      "report_sha256": "0A2A9CC87BF1D13778648F236D029BF0B78FF4DA97C94D563D4A70F6DF99ACD6",
+      "app_sha256": "333fbd43670dbb2346e42ebfd5bbb5bccf672facd6bfdf80742111002a86b129",
+      "model": {
+        "hashes": {
+          "realesr-animevideov3-x2.bin": "548a36f9c3f4ab8da56cd3b13badf23968bee207b396dad14d04b830e5f2ab2d",
+          "realesr-animevideov3-x2.param": "b88ff4f00ebf019a7fdac17fdd45a7fd3665d37509efc5baf2e4da2e24420a04"
+        },
+        "name": "realesr-animevideov3",
+        "native_scale": 2,
+        "output_scale": 2
+      },
+      "output_dimensions": [
+        512,
+        288
+      ],
+      "measurement": {
+        "ai_input_fps": 5.425748908774509,
+        "ai_seconds": 22.1167625,
+        "clip_seconds": 10.0,
+        "comparison_workflow_input_fps": 5.02517068212073,
+        "comparison_workflow_seconds": 23.8797859,
+        "frames": 120,
+        "note": "Workflow time includes Lanczos, contact sheet, probes and hashes. AI time includes PNG I/O. Peak RAM is per child process, not summed. GPU VRAM is not measured."
+      },
+      "stages": [
+        {
+          "name": "decode",
+          "peak_process_ram_bytes": 43835392,
+          "seconds": 0.3604134
+        },
+        {
+          "name": "ai",
+          "peak_process_ram_bytes": 141963264,
+          "seconds": 22.1167625
+        },
+        {
+          "name": "baseline",
+          "peak_process_ram_bytes": 97759232,
+          "seconds": 0.4612403
+        },
+        {
+          "name": "encode",
+          "peak_process_ram_bytes": 92872704,
+          "seconds": 0.5106243
+        },
+        {
+          "name": "comparison",
+          "peak_process_ram_bytes": 55156736,
+          "seconds": 0.1068695
+        }
+      ],
+      "auto_color": true,
+      "aac_packet_prefix_matches": true,
+      "source_unchanged": true
+    }
+  ]
+}

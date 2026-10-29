@@ -1,0 +1,38 @@
+{
+  "schema_version": 1,
+  "cases": [
+    {
+      "id": "anime-144p",
+      "input": "../fixtures/generated/suite-demo/input-144p.mp4",
+      "model": "anime",
+      "seconds": 1,
+      "repeats": 3,
+      "rights": "Procedurally generated FFmpeg testsrc2 fixture"
+    },
+    {
+      "id": "anime-360p",
+      "input": "../fixtures/generated/suite-demo/input-360p.mp4",
+      "model": "anime",
+      "seconds": 1,
+      "repeats": 2,
+      "rights": "Procedurally generated FFmpeg testsrc2 fixture"
+    },
+    {
+      "id": "color-off",
+      "input": "../fixtures/generated/suite-demo/faded-144p.mp4",
+      "model": "anime",
+      "seconds": 1,
+      "repeats": 2,
+      "rights": "Procedurally generated faded FFmpeg testsrc2 fixture"
+    },
+    {
+      "id": "color-on",
+      "input": "../fixtures/generated/suite-demo/faded-144p.mp4",
+      "model": "anime",
+      "seconds": 1,
+      "repeats": 2,
+      "auto_color": true,
+      "rights": "Procedurally generated faded FFmpeg testsrc2 fixture"
+    }
+  ]
+}
