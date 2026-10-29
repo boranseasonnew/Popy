@@ -1,4 +1,6 @@
 /target/
+/dist/
+/exports/
 /.tools/
 /runs/
 /fixtures/generated/

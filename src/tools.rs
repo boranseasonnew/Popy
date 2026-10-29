@@ -16,16 +16,42 @@ pub struct Tools {
 }
 
 impl Tools {
+    pub fn root() -> Result<PathBuf> {
+        let current = std::env::current_dir()?;
+        if std::env::var_os("POPY_TOOLS").is_some() || current.join(".tools/runtime.json").is_file()
+        {
+            return Ok(current);
+        }
+        let executable = std::env::current_exe()?;
+        for parent in executable.ancestors().skip(1).take(3) {
+            if parent.join(".tools/runtime.json").is_file() {
+                return Ok(parent.to_owned());
+            }
+        }
+        Ok(current)
+    }
     pub fn load(root: &Path) -> Result<Self> {
         let config = std::env::var_os("POPY_TOOLS")
             .map(PathBuf::from)
             .unwrap_or_else(|| root.join(".tools/runtime.json"));
-        let tools: Self = serde_json::from_reader(File::open(&config).with_context(|| {
+        let mut tools: Self = serde_json::from_reader(File::open(&config).with_context(|| {
             format!(
                 "Araç ayarı yok: {}. scripts/bootstrap.ps1 çalıştırın.",
                 config.display()
             )
         })?)?;
+        // Portable packages store paths relative to the config directory.
+        let base = config.parent().unwrap_or(root);
+        for path in [
+            &mut tools.ffmpeg,
+            &mut tools.ffprobe,
+            &mut tools.ncnn,
+            &mut tools.models,
+        ] {
+            if path.is_relative() {
+                *path = base.join(&*path);
+            }
+        }
         for path in [&tools.ffmpeg, &tools.ffprobe, &tools.ncnn] {
             if !path.is_file() {
                 bail!("Araç bulunamadı: {}", path.display());
@@ -75,7 +101,7 @@ pub fn external_path(path: &Path) -> Result<PathBuf> {
     Ok(canonical)
 }
 
-#[derive(Debug, Clone, Copy, Deserialize, Serialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Deserialize, Serialize)]
 #[serde(rename_all = "lowercase")]
 pub enum Model {
     General,

@@ -229,7 +229,7 @@ fn median(values: &mut [f64]) -> Option<f64> {
     }
     values.sort_by(f64::total_cmp);
     let half = values.len() / 2;
-    Some(if values.len() % 2 == 0 {
+    Some(if values.len().is_multiple_of(2) {
         (values[half - 1] + values[half]) / 2.0
     } else {
         values[half]

@@ -1,10 +1,11 @@
 [package]
 name = "popy"
-version = "0.1.0-dev"
+default-run = "popy"
+version = "0.2.0-preview.1"
 edition = "2024"
-rust-version = "1.85"
+rust-version = "1.95"
 publish = false
-description = "Local video enhancement research prototype"
+description = "Local open-source video enhancement desktop app"
 license = "Apache-2.0"
 
 [dependencies]
@@ -12,6 +13,20 @@ anyhow = "1"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 sha2 = "0.11"
+image = { version = "0.25", default-features = false, features = ["png"] }
+eframe = { version = "0.37", default-features = false, features = ["default_fonts", "glow", "x11", "wayland"] }
+rfd = "0.17"
+
+[[bin]]
+name = "popy"
+path = "src/main.rs"
+
+[[bin]]
+name = "popy-desktop"
+path = "src/desktop.rs"
+
+[target.'cfg(windows)'.dependencies]
+windows-sys = { version = "0.61", features = ["Win32_Foundation", "Win32_Security", "Win32_System_JobObjects", "Win32_System_Threading", "Win32_Storage_FileSystem"] }
 
 [profile.release]
 lto = "thin"

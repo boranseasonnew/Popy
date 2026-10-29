@@ -29,7 +29,7 @@ if (!(Get-Command link.exe -ErrorAction SilentlyContinue)) {
             $toolchainSysroot = & (Join-Path $env:CARGO_HOME 'bin\rustc.exe') --print sysroot
             $lld = Join-Path $toolchainSysroot 'lib\rustlib\x86_64-pc-windows-msvc\bin\rust-lld.exe'
             $env:CARGO_TARGET_X86_64_PC_WINDOWS_MSVC_LINKER = $lld
-            $env:RUSTFLAGS = '-C linker-flavor=lld-link'
+            $env:RUSTFLAGS = '-C target-feature=+crt-static -C linker-flavor=lld-link'
         }
     }
 }

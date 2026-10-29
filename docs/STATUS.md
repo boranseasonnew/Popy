@@ -1,81 +1,55 @@
 # Popy — geliştirme durumu
 
-29 Ekim 2026. **Aşama 0 / ilk çalışan teknik dilim tamamlandı. Kalite kapısı A henüz geçilmedi.**
+30 Ekim 2026 · **0.2.0-preview.1**. Native Rust masaüstü ve tam klip batch dışa aktarma eklendi. Kararlı 1.0 kalite/donanım kapıları henüz geçilmedi.
 
-## Çalışan parçalar
+## Çalışan özellikler
 
-- Rust CLI: doctor, fixtures, inspect, benchmark.
-- Tekrar üretilebilir 10 saniyelik 720p sentetik kaynak; 360p, 144p ve soluk renkli 144p girdiler.
-- Gerçek ncnn/Vulkan çıkarımı: animevideo 2× ve genel x4plus → 2× çıktı.
-- Gerçek zaman damgalarıyla CFR denetimi; HDR/renk/rotasyon/SAR/ses başlangıcı denetimi.
-- RGB/sRGB ↔ BT.709 için zscale ile gerçek matris/transfer dönüşümü.
-- Açılıp kapanan otomatik ton/kontrast ve hafif doygunluk. Siyah beyaz AI renklendirmesi değil.
-- Model/araç/kaynak hash'leri, aşama süreleri, alt süreç tepe RAM'i ve durum/günlük dosyaları.
-- Çıktı çözünürlüğü, kare sayısı, rasyonel FPS, süre, ses varlığı ve AAC paketlerinin kaynak önekiyle eşleşmesi denetimi.
-- Mevcut çıktı üzerine yazmama, kaynak koruma, süre sınırı ve Ctrl+C ile alt süreci durdurma.
-- Windows'ta aynı proje içinde aynı GPU için iki Popy işinin çakışmasını önleyen, süreç kapanınca serbest kalan OS dosya paylaşım kilidi.
-- Proje içi araç kurulumu, checksum doğrulama, Cargo.lock, format/test/Clippy ve yerel smoke scripti.
+- Türkçe masaüstü: dosya seçme/sürükleme, model ve otomatik renk ayarı, GPU/tile, kayıt klasörü.
+- Sıralı kuyruk, ilerleme, iptal, hatalı/yarıda kalan işi tekrar deneme ve oturum kaydı. Retry sıfırdan başlar.
+- Kısa önizleme; ilk kare önce/sonra kaydırıcısı; sonucu sistem video oynatıcısında açma.
+- Real-ESRGAN genel model: yerel 4× → 2× çıktı. Animevideo: yerel 2×.
+- Tam klip `enhance`: geri basınçlı RGB pipe decoder, küçük PNG grupları, kayıpsız RGB segmentleri, son kodlama ve doğrulama.
+- Mevcut grubun tahmini ham RGB bütçesi 192 MiB; grup PNG'leri her gruptan sonra silinir. Kayıpsız segmentler süreyle büyür, başarılı işte temizlenir. Disk boşluğu önceden kontrol edilir.
+- Otomatik ton/kontrast ve hafif doygunluk; grup birleşiminden sonra tek filtre zinciriyle uygulanır. Siyah beyaz AI renklendirme değildir.
+- Gerçek sRGB/BT.709 matris/transfer dönüşümü, CFR zaman damgaları ve ses denetimi. Karşılaştırma PNG'leri de sRGB'ye dönüştürülür.
+- Kaynak/model/araç hash'leri, kare/FPS/süre/çözünürlük ve AAC paket denetimi; kaynak son hash'iyle değişmezlik kontrolü.
+- Atomik ilerleme JSON'u, zaman sınırları, GUI iptal dosyası, Ctrl+C, Windows Job Object ile alt süreç/torun yaşam döngüsü.
+- Mevcut çıktı klasörüne yazmama, aynı proje/GPU için OS dosya kilidi; hata/iptalde günlükleri koruma.
+- CLI `doctor`, `inspect`, `fixtures`, `enhance`, `benchmark`, `suite`, `--version`.
+- Windows ZIP paketleme, statik MSVC CRT, lisans/font bildirimleri ve SHA-256 manifesti. Runtime/model dosyaları ZIP dışında; ilk kurulumda sabit arşivler indirilir. Son kullanıcı Rust kurmaz.
 
-## Ölçülen sonuçlar
+## Yapılan doğrulamalar
 
-Makine: AMD Radeon(TM) Graphics iGPU, sürücü 31.0.21925.1001, yaklaşık 16 GB sistem RAM'i. Windows'un bildirdiği 512 MB ayrılmış adapter belleği, iGPU'nun toplam kullanılabilir belleği değildir. ncnn logunda seçilen cihaz 0: AMD Radeon(TM) Graphics.
+Makine: AMD Radeon(TM) Graphics iGPU, sürücü 31.0.21925.1001, yaklaşık 16 GB sistem RAM'i. Ayrılmış adapter RAM bildirimi toplam iGPU belleği olarak yorumlanmadı. VRAM ölçülmedi.
 
-Tüm 10 saniyelik klipler 12 FPS / 120 kare. Tek GPU işi, tile 64, 1:1:1 iş parçacığı ayarı. Süreler tek çalıştırma; soğuk model yüklemesi ve PNG I/O içerir.
+- 15 otomatik test geçti. İki `ignored` test, başka testler tarafından ayrı süreçte çağrılan bekleme/torun süreç yardımcılarıdır.
+- Format, tüm hedeflerde Clippy (`-D warnings`) ve Windows release derleme geçti.
+- Süre sınırında doğrudan alt sürecin sonlandığı ve Job Object kapanınca torun sürecin de öldüğü test edildi.
+- `scripts/export-smoke.ps1 -WithDesktop`: 33 saniye, 128×72, 12 FPS, 396 kare kaynak → 256×144; 17 grup. Kareler, süre, FPS, AAC paketleri ve kaynak hash'i doğrulandı. Başarılı işin `work/` klasörü temizlendi. Mevcut çıktı reddedildi.
+- 30000/1001 FPS, 90 kare, sessiz kaynakta çok gruplu dışa aktarma geçti; kesirli FPS ve sessizlik korundu.
+- Gerçek çıkarım aşamasında iptal testi: nonzero çıkış, `cancelled` durumu, son video üretilmemesi; ardından yeni GPU işi çalıştı.
+- Masaüstü kendi CLI işleyicisini başlatıp otomatik renkli önizleme üretti, sonucu yükledi ve gerçek framebuffer ekran görüntüsü kaydetti. Görüntü elle incelendi.
+- `scripts/smoke.ps1 -WithGpu`: yeni 10 saniyelik fixture üretimi, VFR/HDR reddi, GPU + renk, Unicode/boşluk/noktalı virgüllü yol, AAC kontrolü, kaynak koruma ve mevcut çıktı reddi geçti.
 
-| Deneme | Model | AI aşaması | Tüm karşılaştırma işi | AI süreci tepe RAM |
-|---|---|---:|---:|---:|
-| 144p → 288p, 10 sn | animevideo 2× | 21,55 sn | 23,16 sn | 163,2 MiB |
-| 360p → 720p, 10 sn | animevideo 2× | 125,20 sn | 130,04 sn | 170,8 MiB |
-| Soluk 144p, renk kapalı, 10 sn | animevideo 2× | 21,10 sn | 22,70 sn | 148,2 MiB |
-| Soluk 144p, renk açık, 10 sn | animevideo 2× | 22,12 sn | 23,88 sn | 135,4 MiB |
-| Genel model uyumluluk denemesi: yalnızca 2 kare | x4plus, yerel 4× → 2× | 14,25 sn | 14,90 sn | 1078,7 MiB |
+Son 33 saniyelik entegrasyon işi yaklaşık 57.78 sn sürdü. Bu, izole/tekrarlı hız benchmark'ı değildir; diğer derleme/denetim işleri süreyi etkilemiş olabilir. 128×72 sentetik kaynak, doğal video kalite kanıtı değildir. Seçilmiş kayıtlar [2026-10-30-export.json](measurements/2026-10-30-export.json) içinde. Önceki 144p/360p kısa benchmark'lar [2026-10-29.json](measurements/2026-10-29.json) içinde; farklı motorların süreleri doğrudan eşdeğer değildir.
 
-Genel model satırı 10 saniyelik benchmark değildir ve diğer satırlarla hız sıralaması için kullanılmamalı. Küçük deneme, bu iGPU'da genel modelin belirgin maliyetini gösteriyor. Anime modelinin hızlı olması gerçek çekimde uygun varsayılan olduğunu kanıtlamıyor.
+GitHub Actions; format, Clippy, test ve Windows release derlemesini çalıştırır. GPU ve masaüstü smoke testleri yereldir; CI'da GPU testi yapıldığı iddia edilmez.
 
-RAM ölçümü alt sürecin working-set tepe değeri. Toplam sistem belleği, sürücü belleği ve VRAM ayrıca ölçülmedi. Karşılaştırma işi Lanczos, görsel üretimi ve doğrulamaları da içeriyor; saf dışa aktarma FPS'i değil. Sonraki sürümün yeni AAC doğrulama adımı bu eski ölçümlerin içinde değil; yeni release ayrıca smoke testinden geçti.
+## Sürümün sınırları
 
-## Doğrulama
+Girdi: tek progressive H.264, 8-bit yuv420p, açık BT.709 limited SDR, kare piksel, CFR 1–120 FPS ve sıfıra yakın başlangıç. En fazla bir AAC akışı ve yakın ses/video süreleri. HDR, VFR, rotasyon, interlaced, belirsiz renk etiketleri ve diğer kodek/akış düzenleri reddedilir.
 
-- 7 otomatik test geçti; varsayılan olarak atlanan tek test, timeout testinin ayrı süreçte çağırdığı bekleme yardımcısı.
-- `cargo fmt --check`, tüm hedeflerde Clippy (`-Dwarnings`) ve release derleme geçti.
-- `scripts/smoke.ps1 -WithGpu`: yeni fixture, geçerli girdi, VFR/HDR reddi, gerçek GPU, otomatik renk, Türkçe/boşluk/noktalı virgül içeren yol, AAC payload doğrulaması ve mevcut çıktı reddi geçti.
-- Sessiz kaynak inspect ile kabul edildi; iki karelik ayrı GPU dışa aktarımı ses eklenmeden başarıyla tamamlandı (`runs/silent-smoke-final/`).
-- 144p tam klipte kaynak/çıktı AAC birleşik SHA-256 eşleşmesi ayrıca doğrulandı. Kısa kesitlerde tüm kaynak hash'i yerine aynı sıradaki kaynak paketlerinin öneki kontrol edilir; AAC paket sınırları korunur.
-- Ses zamanlaması metadata ile denetlenir; kısa AAC kesitleri için en fazla 25 ms süre farkı kabul ediliyor. Algısal senkron/waveform hizası sertifikası yok.
-- Kaynak dosya hash'i smoke öncesi/sonrası aynı kaldı.
-- GitHub Actions dosyası hazırlandı; uzak depoda CI çalıştırılmadı, commit/push/yayın yapılmadı.
+Çıktı 2×. İç model boyutu en fazla 3840×2160: genel girdi en fazla 960×540, anime 1920×1080. `enhance` süre güvenlik sınırı 6 saat; altı saatlik iş test edilmedi. `benchmark` kısa denemeleri 10 sn/300 kare ile sınırlar.
 
-## Yerel sonuçlar
+Genel model iGPU'da pahalıdır. ncnn modeli her grupta yeniden yüklenir. PNG'ler sınırlıdır fakat geçici segmentlerin toplam alanı süreyle büyür. Ses kontrolü metadata ve AAC paketleri düzeyindedir; algısal senkron sertifikası değildir. Kaldığı kareden devam ve gömülü video oynatıcı yoktur.
 
-Sonuçlar `runs/` altında ve Git dışında:
+## Kararlı 1.0 için kalanlar
 
-- `popy-first-demo.mp4`: kaynak 360p / Popy 720p, 10 saniyelik yan yana video.
-- `anime-144p-10s-v2/`: başarılı 144p teknik deneme.
-- `anime-360p-10s/`: 720p çıktı, Lanczos tabanı ve rapor.
-- `general-144p-smoke/`: genel modelin 2 karelik uyumluluk denemesi.
-- `renk kapali 10s/`, `renk açık Türkçe 10s/`: renk ayarı karşılaştırması.
-- `color-toggle-comparison.png`: renk kapalı/açık karşılaştırması.
+1. Kullanım hakkı belli en az 15 doğal/hareketli klip; yüz, doku, yazı, sıkıştırma ve temporal titreme değerlendirmesi. Kalite kapısı hâlâ `false`.
+2. Daha pratik genel model ve doğrulanmış ağırlık/çevrim kaynağı.
+3. Çok saatlik, bozuk dosya, disk dolması ve daha geniş kapanma/kurtarma senaryoları.
+4. Gerçek RTX 30/40/50, ayrı AMD ve Intel/AMD iGPU donanım matrisi; cihaz listesi ve daha anlaşılır GPU seçimi.
+5. Yaygın etiketsiz SDR dosyaları, kodekler, VFR ve ses ofsetleri için açık ve zamanlamayı koruyan içe aktarma.
+6. Bağımsız temiz Windows makinesinde kurulum ve sürücü/runtime testi; imzalama kararı.
 
-Seçilmiş ham ölçümler ve sonradan doğrulanan AAC paket/kaynak hash kontrolleri `docs/measurements/2026-10-29.json` içinde kayıtlı.
-
-Başarısız ilk işler ve logları silinmedi. Bu denemeler Windows verbatim yol uyumsuzluğunu, PNG sonrası piksel oranını ve sRGB transfer bilgisini tespit edip düzeltmek için kullanıldı. `completed` raporu olmayan işleri başarılı saymayın.
-
-## Repo ve tekrarlı benchmark güncellemesi
-
-- Public repo: https://github.com/boranseasonnew/Popy
-- İngilizce ana README, Türkçe README ve kısa yol haritası eklendi.
-- `suite` komutu: katı JSON manifesti, tekrarlar, sırayla GPU işleri ve JSON/CSV özetleri.
-- Kuru çalışma araç/model kurmadan doğrulandı. Dokuz GPU işi tamamlandı; renk açık/kapalı ve 144p/360p vakaları tekrarlandı. Her iş kaynak klibin ilk bir saniyesini işledi.
-- Hatalı HDR vakasından sonra geçerli vakanın devam ettiği, suite'in nonzero çıkış ve `completed_with_errors` verdiği doğrulandı. Hatalı işler hız istatistiğine katılmıyor.
-- 12 otomatik test, format kontrolü, Clippy ve release derlemesi geçti. Tek atlanan test, timeout testinin ayrı süreçte kullandığı yardımcısıdır.
-- Büyük araç/model dosyaları, çıktılar ve önceki logo denemeleri Git dışında. Uzak CI ilk push sonrasında ayrıca doğrulanacak.
-
-## Sıradaki işler
-
-1. Sentetik desen dışında hareketli çizim ve gerçek çekim içeren, kullanım hakkı belli kalite setini oluşturmak; 15 kliplik hedefe ilerlemek.
-2. Genel içerik için daha hafif gerçek 2× model adayını seçmek ve ağırlık lisansını belgelemek.
-3. Aynı ayarlarla tekrarlı hız ölçümleri, VRAM ölçümü ve temporal kusur değerlendirmesi.
-4. Kapı A kararı: hedef içerikte fayda ve pratik hız kanıtı. Geçilirse diske PNG dökmeyen Rust worker/FFI aşaması.
-5. Bunun ardından Popy masaüstü ekranı, kısa önizleme ve kuyruk.
-
-Masaüstü arayüzü, uzun video, HDR/VFR dönüşümü, RIFE ve siyah beyaz AI renklendirmesi henüz uygulanmadı. RTX veya ayrı AMD kartı bu makinede test edilmedi. Uygulamanın bütün yol haritası tamamlanmış sayılmaz.
+Bu yüzden sürüm ön sürüm olarak dağıtılır. Tam çevrimdışı runtime/model paketi, HDR, RIFE/FPS artırma ve AI siyah beyaz renklendirme henüz yoktur. [Yol haritası](ROADMAP.md), [kurulum rehberi](QUICKSTART.tr.md), [sürüm notları](RELEASE-0.2.0-preview.1.md).

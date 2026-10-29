@@ -1,8 +1,11 @@
-use crate::tools::Tools;
+use crate::{
+    process::{capture, capture_lines},
+    tools::Tools,
+};
 use anyhow::{Context, Result, bail, ensure};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
-use std::{path::Path, process::Command};
+use std::{path::Path, process::Command, time::Duration};
 
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq)]
 pub struct Rate {
@@ -55,24 +58,19 @@ fn number(value: &Value) -> Option<f64> {
 
 pub fn probe(tools: &Tools, input: &Path) -> Result<Media> {
     ensure!(input.is_file(), "Video bulunamadı: {}", input.display());
-    let metadata = Command::new(&tools.ffprobe)
-        .args([
-            "-v",
-            "error",
-            "-show_streams",
-            "-show_format",
-            "-of",
-            "json",
-        ])
-        .arg(input)
-        .output()
-        .context("ffprobe başlatılamadı")?;
-    ensure!(
-        metadata.status.success(),
-        "ffprobe: {}",
-        String::from_utf8_lossy(&metadata.stderr)
-    );
-    let data: Value = serde_json::from_slice(&metadata.stdout)?;
+    let metadata = capture(
+        Command::new(&tools.ffprobe)
+            .args([
+                "-v",
+                "error",
+                "-show_streams",
+                "-show_format",
+                "-of",
+                "json",
+            ])
+            .arg(input),
+    )?;
+    let data: Value = serde_json::from_slice(&metadata)?;
     let streams = data["streams"].as_array().context("Akış bilgisi yok")?;
     let videos: Vec<_> = streams
         .iter()
@@ -84,13 +82,10 @@ pub fn probe(tools: &Tools, input: &Path) -> Result<Media> {
         .collect();
     ensure!(
         videos.len() == 1 && audios.len() <= 1,
-        "Prototip tek video ve en fazla bir ses akışını destekler"
+        "Tek video ve en fazla bir ses akışı destekleniyor"
     );
     let v = videos[0];
-    ensure!(
-        v["codec_name"] == "h264",
-        "Bu prototip H.264 girdisi bekliyor"
-    );
+    ensure!(v["codec_name"] == "h264", "Bu sürüm H.264 girdisi bekliyor");
     ensure!(
         v["pix_fmt"] == "yuv420p",
         "Yalnızca 8-bit yuv420p SDR destekleniyor"
@@ -126,44 +121,58 @@ pub fn probe(tools: &Tools, input: &Path) -> Result<Media> {
         "Video rotasyonu desteklenmiyor"
     );
     let rate = Rate::parse(v["r_frame_rate"].as_str().context("FPS eksik")?)?;
-    let duration = number(&v["duration"]).context("Video süresi eksik")?;
+    let duration = number(&v["duration"])
+        .or_else(|| number(&data["format"]["duration"]))
+        .context("Video süresi eksik")?;
     ensure!(
-        duration.is_finite() && duration > 0.0 && duration <= 30.0,
-        "Araştırma prototipinin girdi sınırı 30 saniye"
+        duration.is_finite() && duration > 0.0 && duration <= 21600.0,
+        "Video süresi 0–6 saat aralığında olmalı"
     );
-    let timestamps = Command::new(&tools.ffprobe)
-        .args([
-            "-v",
-            "error",
-            "-select_streams",
-            "v:0",
-            "-show_frames",
-            "-show_entries",
-            "frame=best_effort_timestamp_time",
-            "-of",
-            "json",
-        ])
-        .arg(input)
-        .output()?;
+    let mut previous: Option<f64> = None;
+    let mut first_pts = None;
+    let mut frame_count = 0;
+    capture_lines(
+        Command::new(&tools.ffprobe)
+            .args([
+                "-v",
+                "error",
+                "-select_streams",
+                "v:0",
+                "-show_frames",
+                "-show_entries",
+                "frame=best_effort_timestamp_time",
+                "-of",
+                "csv=p=0",
+            ])
+            .arg(input),
+        Duration::from_secs(3600),
+        |line| {
+            if line.is_empty() {
+                return Ok(());
+            }
+            let time: f64 = line
+                .split(',')
+                .next()
+                .context("Zaman damgası eksik")?
+                .parse()
+                .context("Kare zaman damgası eksik")?;
+            ensure!(time.is_finite(), "Kare zaman damgası geçersiz");
+            if let Some(last) = previous {
+                validate_cfr(&[last, time], rate)?;
+            }
+            first_pts.get_or_insert(time);
+            previous = Some(time);
+            frame_count += 1;
+            Ok(())
+        },
+    )?;
+    ensure!(frame_count >= 2, "En az iki kare gerekiyor");
+    let first_pts = first_pts.context("Kare yok")?;
     ensure!(
-        timestamps.status.success(),
-        "Kare zaman damgaları okunamadı"
-    );
-    let frame_data: Value = serde_json::from_slice(&timestamps.stdout)?;
-    let frames = frame_data["frames"]
-        .as_array()
-        .context("Kareler bulunamadı")?;
-    let times: Vec<f64> = frames
-        .iter()
-        .map(|f| number(&f["best_effort_timestamp_time"]).context("Kare zaman damgası eksik"))
-        .collect::<Result<_>>()?;
-    ensure!(times.len() >= 2, "En az iki kare gerekiyor");
-    validate_cfr(&times, rate)?;
-    ensure!(
-        times[0].abs() < 0.002,
+        first_pts.abs() < 0.002,
         "Sıfırdan farklı video başlangıcı henüz desteklenmiyor"
     );
-    let frame_duration = times.len() as f64 / rate.fps();
+    let frame_duration = frame_count as f64 / rate.fps();
     ensure!(
         (duration - frame_duration).abs() <= 1.0 / rate.fps() + 0.002,
         "Kare sayısı ve süre tutarsız"
@@ -188,14 +197,14 @@ pub fn probe(tools: &Tools, input: &Path) -> Result<Media> {
         width: v["width"].as_u64().context("Genişlik eksik")? as u32,
         height: v["height"].as_u64().context("Yükseklik eksik")? as u32,
         rate,
-        frame_count: times.len(),
+        frame_count,
         duration,
         has_audio: !audios.is_empty(),
         audio_duration,
         audio_start,
         color_space: "bt709".into(),
         color_transfer: "bt709".into(),
-        first_pts: times[0],
+        first_pts,
     })
 }
 

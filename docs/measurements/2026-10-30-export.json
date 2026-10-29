@@ -1,0 +1,130 @@
+{
+  "date": "2026-10-30",
+  "app_version": "0.2.0-preview.1",
+  "hardware": "AMD Radeon(TM) Graphics iGPU; driver 31.0.21925.1001; ~16 GB system RAM",
+  "source": "Procedural FFmpeg testsrc2/sine; technical integration only, not natural-video quality evidence",
+  "long_export": {
+    "input_media": {
+      "audio_duration": 33.0,
+      "audio_start": 0.0,
+      "color_space": "bt709",
+      "color_transfer": "bt709",
+      "duration": 33.0,
+      "first_pts": 0.0,
+      "frame_count": 396,
+      "has_audio": true,
+      "height": 72,
+      "rate": {
+        "denominator": 1,
+        "numerator": 12
+      },
+      "width": 128
+    },
+    "engine": {
+      "batch_frames": 24,
+      "batches": 17,
+      "decoded_rgb_batch_budget_bytes": 201326592,
+      "note": "Bounded PNG batches; lossless RGB segments grow with duration; model reloads per batch",
+      "temporary_disk_estimate_bytes": 513556480
+    },
+    "validation": {
+      "aac_payload_matches": true,
+      "duration": true,
+      "frames": true,
+      "quality_gate_passed": false,
+      "rational_fps": true,
+      "resolution": true,
+      "source_unchanged": true
+    },
+    "output_media": {
+      "audio_duration": 33.0,
+      "audio_start": 0.0,
+      "color_space": "bt709",
+      "color_transfer": "bt709",
+      "duration": 33.0,
+      "first_pts": 0.0,
+      "frame_count": 396,
+      "has_audio": true,
+      "height": 144,
+      "rate": {
+        "denominator": 1,
+        "numerator": 12
+      },
+      "width": 256
+    },
+    "elapsed_seconds": 57.776983
+  },
+  "fractional_silent": {
+    "input_media": {
+      "audio_duration": null,
+      "audio_start": null,
+      "color_space": "bt709",
+      "color_transfer": "bt709",
+      "duration": 3.003,
+      "first_pts": 0.0,
+      "frame_count": 90,
+      "has_audio": false,
+      "height": 72,
+      "rate": {
+        "denominator": 1001,
+        "numerator": 30000
+      },
+      "width": 128
+    },
+    "validation": {
+      "aac_payload_matches": null,
+      "duration": true,
+      "frames": true,
+      "quality_gate_passed": false,
+      "rational_fps": true,
+      "resolution": true,
+      "source_unchanged": true
+    },
+    "output_media": {
+      "audio_duration": null,
+      "audio_start": null,
+      "color_space": "bt709",
+      "color_transfer": "bt709",
+      "duration": 3.003,
+      "first_pts": 0.0,
+      "frame_count": 90,
+      "has_audio": false,
+      "height": 144,
+      "rate": {
+        "denominator": 1001,
+        "numerator": 30000
+      },
+      "width": 256
+    }
+  },
+  "cancellation": {
+    "stage": "upscale",
+    "state": "cancelled",
+    "completed_frames": 0
+  },
+  "desktop": {
+    "auto_color": true,
+    "output_media": {
+      "audio_duration": null,
+      "audio_start": null,
+      "color_space": "bt709",
+      "color_transfer": "bt709",
+      "duration": 0.967633,
+      "first_pts": 0.0,
+      "frame_count": 29,
+      "has_audio": false,
+      "height": 144,
+      "rate": {
+        "denominator": 1001,
+        "numerator": 30000
+      },
+      "width": 256
+    },
+    "state": "completed"
+  },
+  "notes": [
+    "Integration run, not an isolated throughput benchmark. Other build/audit work may affect timings.",
+    "No NVIDIA/discrete AMD/Intel or multi-hour validation.",
+    "Natural footage quality gate remains false."
+  ]
+}

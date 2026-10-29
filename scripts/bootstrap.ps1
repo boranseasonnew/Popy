@@ -1,5 +1,6 @@
 param([switch]$SkipRust)
 $ErrorActionPreference = 'Stop'
+$ProgressPreference = 'SilentlyContinue'
 $projectRoot = Split-Path $PSScriptRoot -Parent
 $toolsRoot = Join-Path $projectRoot '.tools'
 $downloads = Join-Path $toolsRoot 'downloads'
@@ -7,7 +8,7 @@ New-Item -ItemType Directory -Path $downloads -Force | Out-Null
 
 function Get-VerifiedArchive([string]$Uri, [string]$Name, [string]$ExpectedHash) {
     $archive = Join-Path $downloads $Name
-    if (!(Test-Path -LiteralPath $archive)) { Invoke-WebRequest -Uri $Uri -OutFile $archive -TimeoutSec 180 }
+    if (!(Test-Path -LiteralPath $archive)) { Invoke-WebRequest -Uri $Uri -OutFile $archive -TimeoutSec 600 }
     $actual = (Get-FileHash -LiteralPath $archive -Algorithm SHA256).Hash
     if ($actual -ne $ExpectedHash) { throw "Checksum mismatch for $Name. Download is not used." }
     return $archive
@@ -49,17 +50,20 @@ if (!$SkipRust) {
     if ($LASTEXITCODE -ne 0) { throw 'Rust component installation failed' }
 }
 
-[ordered]@{
+$runtimeJson = [ordered]@{
     ffmpeg = Join-Path $ffmpegBin 'ffmpeg.exe'
     ffprobe = Join-Path $ffmpegBin 'ffprobe.exe'
     ncnn = Join-Path $modelDirectory 'realesrgan-ncnn-vulkan.exe'
     models = Join-Path $modelDirectory 'models'
-} | ConvertTo-Json | Set-Content -LiteralPath (Join-Path $toolsRoot 'runtime.json') -Encoding utf8
-[ordered]@{
+} | ConvertTo-Json
+[IO.File]::WriteAllText((Join-Path $toolsRoot 'runtime.json'), $runtimeJson, (New-Object Text.UTF8Encoding($false)))
+$provenanceJson = [ordered]@{
     downloaded_at = '2026-10-29'
     archives = @(
         @{ url=$ffmpegUrl; sha256=$ffmpegHash; license='GPL build; local research tool, not bundled in Popy executable' },
         @{ url=$modelUrl; sha256=$modelHash; license='See docs/THIRD_PARTY.md; author release with model files' }
     )
-} | ConvertTo-Json -Depth 5 | Set-Content -LiteralPath (Join-Path $toolsRoot 'provenance.json') -Encoding utf8
-Write-Output 'Local tools ready. Run: .\scripts\dev.ps1 test'
+} | ConvertTo-Json -Depth 5
+[IO.File]::WriteAllText((Join-Path $toolsRoot 'provenance.json'), $provenanceJson, (New-Object Text.UTF8Encoding($false)))
+if ($SkipRust) { Write-Output 'Tools ready. You can now open popy-desktop.exe.' }
+else { Write-Output 'Local tools ready. Run: .\scripts\dev.ps1 test' }

@@ -2,21 +2,24 @@ use anyhow::{Result, bail, ensure};
 use popy::{
     media::probe,
     pipeline::{Options, benchmark, fixtures},
-    process::install_cancel_handler,
+    process::{capture, install_cancel_handler, set_cancel_file},
     tools::{Model, Tools},
 };
 use serde_json::json;
 use std::{collections::BTreeMap, path::PathBuf, process::Command};
 
-const HELP: &str = "Popy · yerel video iyileştirme araştırma prototipi\n\n\
+const HELP: &str = "Popy · yerel video iyileştirme · 0.2 ön sürüm\n\n\
 popy doctor\n\
 popy fixtures --out fixtures/generated/test-01\n\
 popy inspect --input video.mp4\n\
+popy enhance --input video.mp4 --out runs/export-01 [--model general|anime] [--auto-color] [--preview-seconds 3] [--gpu 0] [--tile 64] [--cancel-file cancel.flag]\n\
 popy suite --manifest benchmarks/technical.json [--out runs/suite-01 | --dry-run]\n\
 popy benchmark --input video.mp4 --out runs/test-01 --model general|anime --seconds 10 --gpu 0 --tile 64 --rights \"source rights\" [--auto-color]\n\n\
 Genel model yerel 4×, son çıktı 2×; anime modeli yerel 2×.\n\
 Otomatik renk: ton/kontrast + hafif doygunluk; siyah beyaz renklendirme değildir.\n\
-Prototip: en fazla 30 sn girdi, en fazla 10 sn/300 kare deneme; kareler diske yazılır.\n\
+H.264 / AAC, CFR, 8-bit BT.709 limited SDR; HDR, VFR ve rotasyon desteklenmiyor.\n\
+enhance tam video veya kısa önizleme; benchmark en fazla 10 sn/300 kare.\n\
+enhance sınırlı PNG grupları ve geçici kayıpsız segmentler kullanır.\n\
 Çıktı klasörü yeni olmalı. Ctrl+C mevcut alt süreci sonlandırır, günlükleri korur.";
 
 fn main() {
@@ -30,6 +33,10 @@ fn main() {
 fn execute() -> Result<()> {
     let mut arguments = std::env::args().skip(1);
     let command = arguments.next().unwrap_or_else(|| "help".into());
+    if matches!(command.as_str(), "--version" | "-V" | "version") {
+        println!("{}", env!("CARGO_PKG_VERSION"));
+        return Ok(());
+    }
     if matches!(command.as_str(), "help" | "--help" | "-h") {
         println!("{HELP}");
         return Ok(());
@@ -43,7 +50,10 @@ fn execute() -> Result<()> {
         return Ok(());
     }
     let flags = parse_options(remaining)?;
-    let root = std::env::current_dir()?;
+    let root = Tools::root()?;
+    if command == "enhance" {
+        set_cancel_file(flags.get("cancel-file").map(PathBuf::from));
+    }
     if command == "suite" {
         allowed(&flags, &["manifest", "out", "dry-run"])?;
         let manifest = PathBuf::from(required(&flags, "manifest")?);
@@ -72,13 +82,8 @@ fn execute() -> Result<()> {
         "doctor" => {
             ensure!(flags.is_empty(), "doctor seçenek almıyor");
             let version = |path: &std::path::Path, option: &str| -> Result<String> {
-                let output = Command::new(path).arg(option).output()?;
-                ensure!(
-                    output.status.success(),
-                    "Araç denetimi başarısız: {}",
-                    path.display()
-                );
-                Ok(String::from_utf8_lossy(&output.stdout)
+                let output = capture(Command::new(path).arg(option))?;
+                Ok(String::from_utf8_lossy(&output)
                     .lines()
                     .next()
                     .unwrap_or_default()
@@ -100,6 +105,47 @@ fn execute() -> Result<()> {
             allowed(&flags, &["input"])?;
             let info = probe(&tools, &PathBuf::from(required(&flags, "input")?))?;
             println!("{}", serde_json::to_string_pretty(&info)?);
+        }
+        "enhance" => {
+            allowed(
+                &flags,
+                &[
+                    "input",
+                    "out",
+                    "model",
+                    "auto-color",
+                    "preview-seconds",
+                    "gpu",
+                    "tile",
+                    "cancel-file",
+                ],
+            )?;
+            let output = popy::export::enhance(
+                &tools,
+                popy::export::ExportOptions {
+                    input: required(&flags, "input")?.into(),
+                    output: required(&flags, "out")?.into(),
+                    model: Model::parse(
+                        flags.get("model").map(String::as_str).unwrap_or("general"),
+                    )?,
+                    gpu: flags
+                        .get("gpu")
+                        .map(String::as_str)
+                        .unwrap_or("0")
+                        .parse()?,
+                    tile: flags
+                        .get("tile")
+                        .map(String::as_str)
+                        .unwrap_or("64")
+                        .parse()?,
+                    auto_color: flags.contains_key("auto-color"),
+                    preview_seconds: flags
+                        .get("preview-seconds")
+                        .map(|s| s.parse())
+                        .transpose()?,
+                },
+            )?;
+            println!("Tamamlandı: {}", output.join("enhanced.mp4").display());
         }
         "benchmark" => {
             allowed(

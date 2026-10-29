@@ -14,10 +14,10 @@ use std::{
 };
 
 const LIMIT: Duration = Duration::from_secs(1800);
-const AUTO_COLOR: &str =
+pub(crate) const AUTO_COLOR: &str =
     "normalize=blackpt=black:whitept=white:smoothing=24:independence=0:strength=0.35";
-const TO_RGB: &str = "zscale=matrixin=709:matrix=gbr:transferin=709:transfer=iec61966-2-1:primariesin=709:primaries=709:rangein=limited:range=full,format=gbrpf32le,format=rgb24";
-const TO_709: &str = "format=gbrpf32le,zscale=matrixin=gbr:matrix=709:transferin=iec61966-2-1:transfer=709:primariesin=709:primaries=709:rangein=full:range=limited,format=yuv420p,setsar=1";
+pub(crate) const TO_RGB: &str = "zscale=matrixin=709:matrix=gbr:transferin=709:transfer=iec61966-2-1:primariesin=709:primaries=709:rangein=limited:range=full,format=gbrpf32le,format=rgb24";
+pub(crate) const TO_709: &str = "format=gbrpf32le,zscale=matrixin=gbr:matrix=709:transferin=iec61966-2-1:transfer=709:primariesin=709:primaries=709:rangein=full:range=limited,format=yuv420p,setsar=1";
 
 pub struct Options {
     pub input: PathBuf,
@@ -97,9 +97,7 @@ pub fn benchmark(tools: &Tools, options: Options) -> Result<PathBuf> {
             "warning":"Araştırma prototipi: kısa kare dizileri diske yazılır; uzun video alfa motoru değildir."
         }),
     )?;
-    let result = execute(tools, &options, &input, &info, &output, frames, duration);
-    match result {
-        Ok(stages) => {
+    let result = execute(tools, &options, &input, &info, &output, frames, duration).and_then(|stages| {
             let total_seconds = started.elapsed().as_secs_f64();
             let ai = probe(tools, &output.join("enhanced.mp4"))?;
             let baseline = probe(tools, &output.join("lanczos.mp4"))?;
@@ -151,8 +149,10 @@ pub fn benchmark(tools: &Tools, options: Options) -> Result<PathBuf> {
                     options.source_rights
                 ),
             )?;
-            Ok(output)
-        }
+            Ok(())
+    });
+    match result {
+        Ok(()) => Ok(output),
         Err(error) => {
             write_json(
                 &output.join("job.json"),
@@ -275,13 +275,13 @@ fn execute(
 
     let mut comparison = ffmpeg(tools);
     comparison.arg("-i").arg(input).arg("-i").arg(out.join("lanczos.mp4")).arg("-i").arg(out.join("enhanced.mp4"))
-        .args(["-filter_complex", &format!("[0:v]scale={width}:{height}:flags=neighbor,setsar=1[a];[1:v]setsar=1[b];[2:v]setsar=1[c];[a][b][c]hstack=inputs=3"),
+        .args(["-filter_complex", &format!("[0:v]{TO_RGB},scale={width}:{height}:flags=neighbor,setsar=1[a];[1:v]{TO_RGB},setsar=1[b];[2:v]{TO_RGB},setsar=1[c];[a][b][c]hstack=inputs=3"),
             "-frames:v", "1", "-update", "1"]).arg(out.join("comparison.png"));
     stages.push(run(&mut comparison, "comparison", &logs, LIMIT)?);
     Ok(stages)
 }
 
-fn ffmpeg(tools: &Tools) -> Command {
+pub(crate) fn ffmpeg(tools: &Tools) -> Command {
     let mut command = Command::new(&tools.ffmpeg);
     command.args(["-hide_banner", "-loglevel", "error", "-nostdin", "-n"]);
     command
@@ -321,7 +321,12 @@ fn audio_packet_hashes(tools: &Tools, input: &Path) -> Result<Vec<String>> {
         .collect()
 }
 
-fn enhancement_filter(width: u32, height: u32, from_rgb: bool, auto_color: bool) -> String {
+pub(crate) fn enhancement_filter(
+    width: u32,
+    height: u32,
+    from_rgb: bool,
+    auto_color: bool,
+) -> String {
     let decode = if from_rgb { "format=rgb24" } else { TO_RGB };
     let levels = if auto_color {
         format!(",{AUTO_COLOR}")
@@ -337,7 +342,7 @@ fn enhancement_filter(width: u32, height: u32, from_rgb: bool, auto_color: bool)
     format!("{decode}{levels},scale={width}:{height}:flags=lanczos,{TO_709}{saturation}")
 }
 
-fn encode_options(command: &mut Command, frames: usize, duration: f64) {
+pub(crate) fn encode_options(command: &mut Command, frames: usize, duration: f64) {
     command.args([
         "-frames:v",
         &frames.to_string(),
@@ -368,7 +373,12 @@ fn encode_options(command: &mut Command, frames: usize, duration: f64) {
     ]);
 }
 
-fn verify_output(source: &Media, output: &Media, frames: usize, duration: f64) -> Result<()> {
+pub(crate) fn verify_output(
+    source: &Media,
+    output: &Media,
+    frames: usize,
+    duration: f64,
+) -> Result<()> {
     ensure!(
         output.width == source.width * 2 && output.height == source.height * 2,
         "Çıktı boyutu hatalı"
@@ -389,7 +399,12 @@ fn verify_output(source: &Media, output: &Media, frames: usize, duration: f64) -
         "Ses akışı kayboldu veya eklendi"
     );
     if let Some(length) = output.audio_duration {
-        ensure!((length - duration).abs() <= 0.025, "Ses uzunluğu hatalı");
+        let expected = if frames == source.frame_count {
+            source.audio_duration.unwrap_or(duration)
+        } else {
+            duration
+        };
+        ensure!((length - expected).abs() <= 0.025, "Ses uzunluğu hatalı");
         ensure!(
             output.audio_start.is_some_and(|t| t.abs() < 0.002),
             "Ses başlangıcı değişti"
@@ -413,7 +428,12 @@ fn png_dimensions(path: &Path) -> Result<(u32, u32)> {
     ))
 }
 
-fn validate_sequence(directory: &Path, frames: usize, width: u32, height: u32) -> Result<()> {
+pub(crate) fn validate_sequence(
+    directory: &Path,
+    frames: usize,
+    width: u32,
+    height: u32,
+) -> Result<()> {
     let count = fs::read_dir(directory)?
         .collect::<std::io::Result<Vec<_>>>()?
         .len();
@@ -430,13 +450,17 @@ fn validate_sequence(directory: &Path, frames: usize, width: u32, height: u32) -
 }
 
 pub fn write_json(path: &Path, data: &serde_json::Value) -> Result<()> {
+    let temporary = path.with_extension("json.tmp");
     let mut file = OpenOptions::new()
         .create(true)
         .truncate(true)
         .write(true)
-        .open(path)?;
+        .open(&temporary)?;
     serde_json::to_writer_pretty(&mut file, data)?;
     file.write_all(b"\n")?;
+    file.sync_all()?;
+    drop(file);
+    fs::rename(temporary, path)?;
     Ok(())
 }
 

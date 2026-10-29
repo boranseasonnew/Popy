@@ -1,67 +1,42 @@
+<p align="center"><img src="branding/popy-logo-v1.png" alt="Popy" width="180"></p>
+
 # Popy
 
-[English](README.md) · Türkçe
+Rust ile geliştirilen, bilgisayarında çalışan açık kaynak video iyileştirme uygulaması.
 
-Yerel video iyileştirme uygulaması. Rust çekirdeği, ncnn/Vulkan ve turuncu kırmızı panda.
+[![Rust checks](https://github.com/boranseasonnew/Popy/actions/workflows/check.yml/badge.svg)](https://github.com/boranseasonnew/Popy/actions/workflows/check.yml)
 
-**Şimdiki durum: Aşama 0 araştırma CLI'si. Masaüstü arayüzü ve uzun video motoru henüz yok.**
+**0.2 ön sürüm:** Masaüstü arayüzü, sıralı kuyruk, 2× AI upscale, açılıp kapanan otomatik renk düzeltme, kısa önizleme ve tam klip dışa aktarma var. Algısal kalite ve geniş donanım uyumluluğu henüz doğrulanmadı; kararlı 1.0 değildir.
 
-## İlk çalışan dilim
+[Windows ZIP indir](https://github.com/boranseasonnew/Popy/releases) · [Kurulum ve kullanım](docs/QUICKSTART.tr.md) · [Durum](docs/STATUS.md) · [Yol haritası](docs/ROADMAP.md) · [English](README.md)
 
-- 10 saniyelik 720p sentetik kaynak ve ondan 360p, 144p, soluk renkli 144p girdiler üretir.
-- Videonun gerçek kare zaman damgalarını okuyarak CFR, BT.709 SDR, ses ve boyut sözleşmesini denetler.
-- Gerçek Real-ESRGAN modelini seçilen Vulkan GPU'sunda çalıştırır.
-- Aynı klipten Lanczos ve AI sonuçları, karşılaştırma görseli ve ölçüm raporu çıkarır.
-- `--auto-color`: zaman içinde yumuşatılmış otomatik ton/kontrast ve hafif doygunluk. **Siyah beyaz videoya renk üreten AI modeli değildir.**
-- Her iş yeni bir klasöre yazılır; kaynak ve mevcut sonuçların üzerine yazılmaz. Ctrl+C alt süreci durdurur.
+ZIP'i tamamen çıkar, ilk kullanımda `Araclari Kur.cmd` dosyasını çalıştır, ardından `popy-desktop.exe` dosyasını aç. Rust ve Visual Studio gerekmez. Kurulum araçları ve modelleri GitHub'dan indirip SHA-256 ile kontrol eder. İşleme sırasında videolar dış servise gönderilmez.
 
-## Windows geliştirme
+Video ekle; gerçek çekim için Genel, çizim için Anime modelini seç. İstersen otomatik rengi açıp önce üç saniyelik önizleme al. İlk karede önce/sonra kaydırıcısını kullan; hareketli sonucu videoyu açarak incele. Hazır videoları `Kuyruğu işle` ile sırayla dışa aktar. Her iş yeni klasöre video, karşılaştırma, rapor ve günlük yazar. Kaynak ve mevcut sonuçların üzerine yazılmaz.
 
-PowerShell 7, Windows x64, Vulkan destekli güncel sürücü ve MSVC/Windows SDK kitaplıkları gerekir. `bootstrap.ps1`, Rust ve araçları yalnızca `.tools/` içine kurar; kullanıcı PATH'ini değiştirmez. Mevcut makinedeki eksik VS bağlayıcısı için `dev.ps1`, Rust'ın LLD bağlayıcısını SDK/CRT kitaplıklarıyla kullanır. Kitaplıklar yoksa ayrıca Visual Studio Build Tools gerekir; script sistem kurulumunu otomatik değiştirmez.
+Otomatik renk ton/kontrast/doygunluk ayarıdır. Siyah beyaz görüntüye AI ile yeni renk eklemez. Modeller Popy tarafından eğitilmedi; kaynak ve modele göre sonuç değişir. Genel model iGPU'da yavaştır.
+
+Girdi: H.264, sabit FPS, progressive 8-bit yuv420p, açık BT.709 limited SDR etiketi, kare piksel ve sıfıra yakın başlangıç; en fazla bir AAC akışı. HDR, VFR, döndürme ve diğer kodekler henüz desteklenmez. Çıktı 2×; genel model en fazla 960×540, anime modeli 1920×1080 girdi kabul eder.
+
+Yeni motor küçük PNG gruplarıyla çalışır, grup bitince kareleri temizler. Geçici kayıpsız RGB segmentleri video süresiyle büyür. Başarılı işte temizlenir; hata/iptalde inceleme için korunur. Disk alanı kontrolü vardır. Model her grupta yeniden yüklenir; doğrudan Rust/FFI çıkarımı henüz yoktur.
+
+Vulkan sürücüsü gerekir. AMD Radeon iGPU üzerinde teknik testler yapıldı. RTX 30/40/50, ayrı AMD ve Intel kartları hedefleniyor; bu ailelerde test edilmiş uyumluluk iddiası yok.
+
+Geliştirme için Windows x64, PowerShell 7, MSVC ve Windows SDK kütüphaneleri gerekir:
 
 ```powershell
 .\scripts\bootstrap.ps1
 .\scripts\dev.ps1 test
-.\scripts\dev.ps1 clippy --all-targets
-.\scripts\dev.ps1 run -- doctor
-.\scripts\dev.ps1 run -- fixtures --out fixtures/generated/my-test
-.\scripts\dev.ps1 run -- benchmark --input fixtures/generated/my-test/input-144p.mp4 --out runs/my-test --model anime --seconds 10 --gpu 0 --tile 64 --rights "Generated FFmpeg technical fixture"
-.\scripts\dev.ps1 run -- benchmark --input fixtures/generated/my-test/faded-144p.mp4 --out runs/my-color-test --model anime --seconds 10 --gpu 0 --tile 64 --rights "Generated FFmpeg technical fixture" --auto-color
-```
-
-`--out` klasörünün var olmaması gerekir. Aynı komutu tekrar çalıştırırken yeni ad seçin. `POPY_TOOLS` ortam değişkeni ile farklı bir runtime.json yolu verilebilir.
-
-`general`: RealESRGAN x4plus, yerel 4× çıkarım ve ardından 2× boyuta küçültme. `anime`: gerçek 2× animevideo modeli; genel gerçek çekim kalitesi için varsayılan seçildiği anlamına gelmez.
-
-```powershell
 .\scripts\dev.ps1 build --release
-.\target\release\popy.exe --help
-.\scripts\smoke.ps1 -WithGpu
+.\target\release\popy-desktop.exe
 ```
 
-## Deneme sözleşmesi
-
-Tekrarlı karşılaştırmalar için `suite` komutu eklendi. Ayrıntılar [benchmark listelerinde](benchmarks/README.md):
+CLI ile tam klip:
 
 ```powershell
-.\scripts\dev.ps1 run -- suite --manifest benchmarks/technical.json --dry-run
-.\scripts\dev.ps1 run -- fixtures --out fixtures/generated/suite-demo
-.\scripts\dev.ps1 run -- suite --manifest benchmarks/technical.json --out runs/suite-01
+.\target\release\popy.exe enhance --input video.mp4 --out runs/export-01 --model general --auto-color
 ```
 
-Örnek liste, 10 saniyelik kaynakların ilk bir saniyesini tekrarlar; başarısız işleri zaman ortalamasına katmaz. Araç kurmadan da `--dry-run` ile manifest denetlenebilir.
+`--preview-seconds 3` kısa örnek üretir. `benchmark` ve `suite`, Lanczos karşılaştırması ve tekrarlı ölçümler için korunmuştur. Ayrıntılar [İngilizce README](README.md) ve [benchmark rehberinde](benchmarks/README.md).
 
-Girdi en fazla 30 saniye; işleme en fazla 10 saniye ve 300 kare. H.264, yuv420p, progresif, BT.709 limited-range, kare piksel, sıfıra yakın video/ses başlangıcı ve en fazla tek AAC ses akışı. HDR, VFR, rotasyon ve interlaced açık hata alır. Bu sınırlar geçici araştırma kapsamıdır.
-
-**Bu prototip PNG karelerini diske yazar.** 2 GB tahmini ham kare bütçesi ve 4K yerel model çıkışı sınırı vardır. Uzun video desteği, ayrı akış halinde worker aşamasında geliştirilecek.
-
-Her işte `enhanced.mp4`, `lanczos.mp4`, `comparison.png`, `report.json`, `report.md`, `job.json`, model/araç hash'leri ve günlükler oluşur. RAM ölçümü alt sürecin tepe working-set değeridir; toplam sistem RAM'i veya VRAM değildir. VRAM henüz ölçülmüyor. Workflow süresi karşılaştırma üretimini de kapsar; uygulamanın tek-video dışa aktarma FPS'i olarak yorumlanmamalı.
-
-Sentetik desenler entegrasyonu test eder. Yüz, saç, ince doku, doğal hareket ve zamansal kalite için gerçek çekim seti hâlâ gerekli; Aşama 0 kalite kapısı bu çıktılarla otomatik geçmiş sayılmaz.
-
-## Proje kayıtları
-
-- [Araştırma planı](VIDEO_AI_ARASTIRMA_VE_YOL_HARITASI.md)
-- [Güncel ilerleme ve test sonuçları](docs/STATUS.md)
-- [Üçüncü taraf kaynakları](docs/THIRD_PARTY.md)
-- [Görsel kimlik](branding/IDENTITY.md)
+Kod [Apache-2.0](LICENSE) lisanslıdır. FFmpeg, ncnn, Real-ESRGAN ve ağırlıkları ayrı lisanslara tabidir; [envanteri](docs/THIRD_PARTY.md) incele. Popy bağımsızdır, Topaz Labs ile bağlantısı yoktur.
