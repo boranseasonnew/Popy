@@ -51,6 +51,26 @@ fn number(v: &Value) -> Option<f64> {
 fn tag(v: &Value, name: &str) -> String {
     v[name].as_str().unwrap_or("unknown").to_owned()
 }
+fn fill_frame_metadata(video: &mut Value, frame: &Value) {
+    // Some HEVC demuxers expose primaries/transfer only after decoding a frame.
+    for key in [
+        "color_transfer",
+        "color_primaries",
+        "color_space",
+        "color_range",
+        "pix_fmt",
+    ] {
+        if matches!(video[key].as_str(), None | Some("unknown" | "unspecified"))
+            && let Some(value) = frame[key].as_str()
+            && !matches!(value, "unknown" | "unspecified")
+        {
+            video[key] = Value::String(value.to_owned());
+        }
+    }
+    if video["start_time"].is_null() && !frame["best_effort_timestamp_time"].is_null() {
+        video["start_time"] = frame["best_effort_timestamp_time"].clone();
+    }
+}
 fn plan(data: &Value) -> Result<Plan> {
     let streams = data["streams"]
         .as_array()
@@ -217,7 +237,37 @@ pub fn prepare(
             ])
             .arg(input),
     )?;
-    let plan = plan(&serde_json::from_slice(&bytes)?)?;
+    let mut metadata: Value = serde_json::from_slice(&bytes)?;
+    let position = metadata["streams"]
+        .as_array()
+        .context("No streams")?
+        .iter()
+        .position(|s| s["codec_type"] == "video" && s["disposition"]["attached_pic"] != 1)
+        .context("No video stream")?;
+    let video = &metadata["streams"][position];
+    if [
+        "color_transfer",
+        "color_primaries",
+        "color_space",
+        "color_range",
+        "pix_fmt",
+    ]
+    .iter()
+    .any(|key| matches!(video[*key].as_str(), None | Some("unknown" | "unspecified")))
+    {
+        let index = video["index"].as_u64().context("Missing stream index")?;
+        let frames = capture(Command::new(&tools.ffprobe).args(["-v","error","-select_streams",&index.to_string(),
+            "-read_intervals","%+#32","-show_frames","-show_entries",
+            "frame=color_transfer,color_primaries,color_space,color_range,pix_fmt,best_effort_timestamp_time","-of","json"]).arg(input))?;
+        let decoded: Value = serde_json::from_slice(&frames)?;
+        if let Some(frame) = decoded["frames"]
+            .as_array()
+            .and_then(|frames| frames.first())
+        {
+            fill_frame_metadata(&mut metadata["streams"][position], frame);
+        }
+    }
+    let plan = plan(&metadata)?;
     let video = work.join("import-video.mp4");
     let mut decode = ffmpeg(tools);
     decode.arg("-i").arg(input).args([
@@ -303,6 +353,17 @@ pub fn prepare(
 mod tests {
     use super::*;
     use serde_json::json;
+    #[test]
+    fn decoded_hevc_frame_supplies_missing_hdr_transfer() {
+        let mut video = json!({"index":0,"codec_type":"video","codec_name":"hevc","pix_fmt":"yuv420p10le","width":160,"height":90,"avg_frame_rate":"12/1","color_space":"bt2020nc"});
+        fill_frame_metadata(
+            &mut video,
+            &json!({"color_transfer":"smpte2084","color_primaries":"bt2020","color_range":"tv"}),
+        );
+        let p = plan(&json!({"streams":[video]})).unwrap();
+        assert!(p.hdr);
+        assert!(p.assumptions.is_empty());
+    }
     #[test]
     fn accepts_high_depth_hdr_and_high_frame_rates_without_downscaling() {
         let p = plan(&json!({"streams":[{"index":0,"codec_type":"video","codec_name":"hevc","pix_fmt":"yuv420p10le","width":3840,"height":2160,"avg_frame_rate":"240/1","color_transfer":"smpte2084","color_space":"bt2020nc","color_primaries":"bt2020","color_range":"tv"}]})).unwrap();
