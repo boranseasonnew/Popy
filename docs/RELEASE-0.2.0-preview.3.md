@@ -18,3 +18,5 @@ Output remains 2× H.264/AAC MP4 in 8-bit SDR. This is not a promise to read cor
 27 automated tests and the Windows format/Clippy/release build checks passed. The final packaged binaries passed the complete import matrix, desktop comparison-texture checks in light/dark themes, and verification of all 486 extracted package files.
 
 The import matrix passed HEVC 10-bit, PQ HDR, HLG HDR, VP9/Opus with delayed audio, MJPEG AVI, 16-bit RGB, VFR, anamorphic/interlaced, GIF and odd-sized RGB sources. A provided 1920×1080/60 FPS full-range source passed import of all 180 frames with audio and source-integrity checks. Additional checks covered a real display rotation and 240 FPS. Local AMD iGPU inference produced a 3840×2160 frame from that source and passed a general-model job above the previous width limit. These small technical tests do not certify natural-footage quality, every codec, long jobs or other GPUs.
+
+The installed application also imported the provided source successfully while preserving preferences/runtime. An isolated preview.2 client completed the real public GitHub update to preview.3, restarted, and preserved its export sentinel.

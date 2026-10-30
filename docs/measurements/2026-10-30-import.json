@@ -7,13 +7,52 @@
   "final_package_files_verified": 486,
   "desktop_comparison_textures_verified_light_and_dark": true,
   "runtime": "FFmpeg 9.0.2, official pinned Real-ESRGAN ncnn runtime",
-  "import_matrix_passed": ["HEVC 10-bit", "PQ HDR", "HLG HDR", "VP9 with delayed Opus audio", "MJPEG AVI", "16-bit RGB", "variable frame rate", "anamorphic and flagged interlacing", "animated GIF", "odd-sized RGB"],
-  "provided_file_import": {"source_unchanged": true, "width": 1920, "height": 1080, "fps": 60, "frames": 180, "audio": true, "input_pixel_format": "yuvj420p"},
-  "additional_import_checks": ["90-degree display matrix applied as 90x160 output", "240 FPS preserved"],
+  "import_matrix_passed": [
+    "HEVC 10-bit",
+    "PQ HDR",
+    "HLG HDR",
+    "VP9 with delayed Opus audio",
+    "MJPEG AVI",
+    "16-bit RGB",
+    "variable frame rate",
+    "anamorphic and flagged interlacing",
+    "animated GIF",
+    "odd-sized RGB"
+  ],
+  "provided_file_import": {
+    "source_unchanged": true,
+    "width": 1920,
+    "height": 1080,
+    "fps": 60,
+    "frames": 180,
+    "audio": true,
+    "input_pixel_format": "yuvj420p"
+  },
+  "additional_import_checks": [
+    "90-degree display matrix applied as 90x160 output",
+    "240 FPS preserved"
+  ],
   "gpu": "AMD Radeon integrated GPU",
   "gpu_smoke": [
-    {"source": "single frame derived from provided input", "input_size": "1920x1080", "output_size": "3840x2160", "frames": 1, "model": "anime", "passed": true},
-    {"source": "generated technical pattern beyond the old general-model width cap", "input_size": "1024x64", "output_size": "2048x128", "frames": 1, "model": "general", "passed": true}
+    {
+      "source": "single frame derived from provided input",
+      "input_size": "1920x1080",
+      "output_size": "3840x2160",
+      "frames": 1,
+      "model": "anime",
+      "passed": true
+    },
+    {
+      "source": "generated technical pattern beyond the old general-model width cap",
+      "input_size": "1024x64",
+      "output_size": "2048x128",
+      "frames": 1,
+      "model": "general",
+      "passed": true
+    }
   ],
-  "limits": "Import tests do not certify perceptual restoration quality, complete-video inference of the provided file, every possible format, multi-hour stability or other hardware. HDR is tone-mapped to SDR; input encoding properties are not all preserved."
+  "limits": "Import tests do not certify perceptual restoration quality, complete-video inference of the provided file, every possible format, multi-hour stability or other hardware. HDR is tone-mapped to SDR; input encoding properties are not all preserved.",
+  "installed_application_version": "0.2.0-preview.3",
+  "installed_original_source_import_passed": true,
+  "public_preview2_to_preview3_update_passed": true
 }
