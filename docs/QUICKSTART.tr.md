@@ -23,12 +23,12 @@ Ayarlar sıraya alırken işe kaydedilir. Durdurma kuyruktaki işleri bekletir. 
 
 ## Destek ve sınırlar
 
-Windows x64 ve güncel Vulkan sürücüsü gerekir. Yerel GPU testleri AMD Radeon iGPU'da yapıldı; RTX 30/40/50, ayrı AMD ve Intel kartları henüz doğrulanmadı. Windows EXE'sinde Authenticode imzası yoktur. Güncelleme paketlerinin Ed25519 imzası ayrı bir mekanizmadır.
+Masaüstü ve `enhance`, kurulu FFmpeg'in okuyabildiği videoları otomatik hazırlar: MP4/MOV/MKV/WebM/AVI ve diğer konteynerler, H.264/HEVC/VP9 ve mevcut diğer çözücüler, farklı piksel biçimleri ve renk derinlikleri. Dosya seçicide Tüm dosyalar seçeneği vardır. İlk gerçek video ve ilk ses akışı kullanılır; diğer ses, altyazı ve veri akışları aktarılmaz.
 
-Bu ön sürüm tek progressive H.264, sabit 1–120 FPS, 8-bit yuv420p, açık BT.709 limited SDR etiketi, kare piksel ve sıfıra yakın başlangıç kabul eder. En fazla bir hizalı AAC akışı desteklenir. HDR, VFR, döndürme, interlaced, etiketsiz renk ve diğer kodekler henüz desteklenmez.
+Uygun girdiler doğrudan işlenir. Diğerleri geçici, kayıpsız H.264 kodlamalı 8-bit BT.709 SDR işleme kopyasına dönüştürülür. VFR sabit FPS'ye çevrilir, rotasyon uygulanır, işaretli interlaced görüntü düzeltilir, piksel oranı düzeltilir ve tek sayılı boyutlara dolgu eklenir. PQ/HLG HDR, SDR'ye ton eşleme ile dönüştürülür. Eksik renk bilgilerindeki varsayımlar rapora yazılır. İçe aktarma dönüşümü gerektiğinde ses videoya hizalanıp stereo AAC olarak kodlanır. Kaynak değişmez. `inspect`/`benchmark` araştırma komutları sıkı biçim denetimini korur; `prepare`, GPU kullanmadan içe aktarmayı sınar.
 
-Çıktı 2×. Genel model içeride 4× çalışır; girdi sınırı 960×540'tır. Anime girdi sınırı 1920×1080'dir. Genel model iGPU'da yavaştır. Otomatik renk ton/kontrast/doygunluk düzeltir; siyah beyaz görüntüye yeni renk eklemez.
+Çıktı hâlâ 2× H.264/AAC MP4, 8-bit SDR'dir. HDR ve kaynak kodlamanın tüm özellikleri korunmaz. Eski modele özel girdi çözünürlük sınırları kaldırıldı; yüksek çözünürlüklü kaynak sessizce küçültülmez. Gerçek GPU/RAM, geçici disk ve kodlayıcı sınırları geçerlidir. Genel model yüksek çözünürlükte çok yavaş olabilir. Bozuk, şifreli veya desteklenmeyen özel biçimler yine hata verebilir.
 
-PNG grupları sınırlıdır fakat geçici kayıpsız segmentlerin toplam alanı video süresiyle büyür. Boş disk kontrolü yapılır. 6 saatlik süre sınırı bir güvenlik sınırıdır; 6 saatlik dayanıklılık testi iddiası değildir. GPU bellek hatasında tile değerini 64'ten 32'ye düşürmeyi dene.
+6 saatlik süre sınırı dayanıklılık testi iddiası değildir. PNG grupları sınırlıdır; kayıpsız segmentlerin toplam alanı süreyle büyür. GPU bellek hatasında tile değerini düşürmeyi dene. Otomatik renk, ton/kontrast/doygunluk düzeltir; siyah beyaz görüntüye yeni renk eklemez.
 
-Popy kodu Apache-2.0; üçüncü taraf araç, model ve fontların lisansları ayrıdır. Bildirimler `DEPENDENCIES.md`, `licenses/` ve `THIRD_PARTY.md` içindedir.
+Windows x64 ve Vulkan sürücüsü gerekir. Yerel GPU testleri AMD Radeon iGPU'da yapıldı; diğer aileler henüz doğrulanmadı. EXE'de Windows Authenticode imzası yoktur; güncelleme paketleri ayrı Ed25519 imzası kullanır. Popy kodu Apache-2.0; bağımlılık bildirimleri `DEPENDENCIES.md`, `licenses/` ve `THIRD_PARTY.md` içindedir.

@@ -1,3 +1,12 @@
+# Current hotfix — 0.2.0-preview.3
+
+Desktop/enhance now automatically import FFmpeg-decodable inputs rather than rejecting every format outside the research contract. Full-range yuvj420p, different codecs/bit depths, VFR, rotation, flagged interlacing and pixel aspect are normalized. PQ/HLG HDR is tone-mapped to 8-bit SDR. Source files stay unchanged; color assumptions and conversions are recorded. The old desktop model-specific resolution rejection was removed; hardware/disk/encoder limits still apply. Output remains 2× SDR H.264/AAC MP4. See [release notes](RELEASE-0.2.0-preview.3.md).
+
+The new import matrix passed ten synthetic format cases plus a provided 1080p/60 source with 180 frames and audio. Additional rotation/240 FPS checks and 4K-frame/general-model GPU smokes passed; see [import measurements](measurements/2026-10-30-import.json). These are not full natural-footage quality or multi-hour certifications.
+
+The preview.2 measurements below describe the earlier restricted input path and remain historical evidence, not a statement of current desktop input restrictions.
+
+---
 # Popy — geliştirme durumu
 
 30 Ekim 2026 · **0.2.0-preview.2**. Yeni masaüstü tasarımı, 20 dil, özelleştirilebilir kısayollar ve imzalı uygulama içi güncelleme. Kararlı 1.0 kalite/donanım kapıları henüz geçilmedi.

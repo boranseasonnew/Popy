@@ -22,12 +22,14 @@ Updates preserve `.tools/`, settings, exports and source videos. If file replace
 
 ## Supported media
 
-This preview accepts one progressive H.264 video stream, constant 1–120 FPS, 8-bit yuv420p, explicit limited-range BT.709 SDR metadata, square pixels and a near-zero start. Audio is optional; at most one aligned AAC stream is supported.
+The desktop app and `enhance` automatically prepare videos that the installed FFmpeg can decode: MP4, MOV, MKV, WebM, AVI and other containers; H.264, HEVC, VP9 and other available decoders; different chroma formats and bit depths. The file picker also has an All files option. The first real video and first audio stream are selected; additional audio/subtitle/data streams are omitted.
 
-Output is 2×. General-model input is capped at 960×540 because its internal inference scale is 4×. Anime-model input is capped at 1920×1080. The general model can be slow on integrated graphics. Automatic color adjusts tone, contrast and saturation; it does not colorize black-and-white footage.
+Compatible inputs keep the existing path. Other files are converted into a temporary lossless H.264 processing copy in 8-bit BT.709 SDR. VFR is resampled to constant FPS, rotation applied, flagged interlacing handled, pixel aspect corrected and odd dimensions padded. PQ/HLG HDR is tone-mapped to SDR. Missing color metadata uses recorded assumptions; source files are unchanged. Audio is aligned to video and encoded as stereo AAC when import conversion is required. Conversion details are written to the report. `inspect` and `benchmark` keep the stricter research contract; `prepare` tests automatic import without GPU inference.
 
-HDR, VFR, rotation, interlacing, untagged color and other codecs/layouts are not supported yet. The six-hour input cap is a safety limit, not a tested multi-hour stability claim. Current inference writes bounded PNG batches and temporary lossless segments; total segment storage grows with video duration. A conservative free-space check runs before processing. Lower tile size from 64 to 32 after a GPU-memory failure.
+Output remains 2× H.264/AAC MP4 in 8-bit SDR. This release does not preserve HDR or every original encoding property. The old fixed model-specific input resolution caps are removed; images are not automatically reduced in size. Actual GPU/RAM, temporary disk and encoder limits still apply, and general-model processing at high resolution can be very slow. Corrupt, encrypted and unsupported proprietary formats can still fail.
 
-Windows x64 and a Vulkan driver are required. Local GPU integration tests used an AMD Radeon integrated GPU; RTX 30/40/50, discrete AMD and Intel devices are not certified. The executable does not have a Windows Authenticode signature. Update metadata uses a separate Ed25519 publisher signature; these are different mechanisms.
+The six-hour duration cap is a safety limit, not a tested multi-hour stability claim. Current inference writes bounded PNG batches and temporary lossless segments; total storage grows with duration. Lower tile size after a GPU-memory failure. Automatic color adjusts tone, contrast and saturation; it does not colorize black-and-white footage.
 
-Popy code is Apache-2.0. Third-party tools, model weights and fonts have separate licenses. Package notices are in `DEPENDENCIES.md`, `licenses/` and `THIRD_PARTY.md`.
+Windows x64 and a Vulkan driver are required. Local GPU integration tests used an AMD Radeon integrated GPU; other GPU families are not certified. The EXE has no Windows Authenticode signature; update packages use a separate Ed25519 publisher signature.
+
+Popy code is Apache-2.0. Third-party notices are in `DEPENDENCIES.md`, `licenses/` and `THIRD_PARTY.md`.

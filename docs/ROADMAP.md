@@ -23,7 +23,7 @@
 - [ ] Faster, practical general model with verified weight provenance/conversion; current model is expensive and internally 4×.
 - [ ] Multi-hour stress, disk exhaustion, corrupted media and forced-close recovery tests.
 - [ ] Actual RTX 30/40/50, discrete AMD and selected Intel/AMD iGPU validation; device enumeration and clearer selection.
-- [ ] Common untagged SDR import, additional codecs, audio offsets and explicit VFR conversion preserving timing.
+- [x] Automatic broad import: untagged SDR assumptions, additional codecs, audio offsets and explicit VFR resampling. HDR is tone-mapped to SDR; original format preservation remains limited.
 - [ ] Embedded playback and moving before/after preview; clearer recovery.
 - [ ] Clean Windows installation test, runtime dependency checks and signing decision.
 - [ ] Runtime/model redistribution review before a fully offline bundle.
