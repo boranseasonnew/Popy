@@ -425,7 +425,12 @@ impl PopyApp {
         }
         let image_path = self
             .selected
-            .map(|i| self.session.entries[i].output.join("comparison.png"))
+            .and_then(|i| {
+                let entry = &self.session.entries[i];
+                // FFmpeg can create the PNG before it has finished writing it.
+                // Do not cache a failed texture decode from an in-flight job.
+                (entry.state == "completed").then(|| entry.output.join("comparison.png"))
+            })
             .filter(|p| p.is_file());
         if image_path != self.comparison_path {
             self.comparison = image_path

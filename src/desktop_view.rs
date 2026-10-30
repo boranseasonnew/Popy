@@ -1875,11 +1875,12 @@ impl PopyApp {
             let success = keyboard_ok
                 && setup_ok
                 && (!smoke.run_export
-                    || self
-                        .session
-                        .entries
-                        .iter()
-                        .all(|entry| entry.state == "completed"));
+                    || (self.comparison.is_some()
+                        && self
+                            .session
+                            .entries
+                            .iter()
+                            .all(|entry| entry.state == "completed")));
             let _ = popy::pipeline::write_json(
                 &path.with_extension("json"),
                 &serde_json::json!({"setup_test":smoke.setup_test,"setup_passed":setup_ok,"keyboard_test":smoke.keyboard_test,"keyboard_passed":keyboard_ok,
